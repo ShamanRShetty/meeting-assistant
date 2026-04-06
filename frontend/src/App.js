@@ -1,441 +1,465 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const API = process.env.REACT_APP_API_URL || '/api';
 
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Geist:wght@300;400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --ink: #0f0e11;
-    --paper: #f7f4ef;
-    --paper-dark: #edeae3;
-    --accent: #c8502a;
-    --accent-dim: rgba(200, 80, 42, 0.12);
-    --green: #1e6b4a;
-    --green-dim: rgba(30, 107, 74, 0.1);
-    --muted: #7a7570;
-    --border: rgba(15,14,17,0.12);
-    --shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    --bg: #0d0f14;
+    --surface: #13161d;
+    --surface-2: #1a1e28;
+    --border: #252a38;
+    --border-hover: #353d52;
+    --text-primary: #e8eaf0;
+    --text-secondary: #7b82a0;
+    --text-muted: #4a5068;
+    --accent: #4f8ef7;
+    --accent-dim: rgba(79,142,247,0.12);
+    --accent-hover: #6ba3f9;
+    --green: #3ecf7a;
+    --green-dim: rgba(62,207,122,0.1);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.1);
+    --red: #f55656;
+    --red-dim: rgba(245,86,86,0.1);
     --radius: 10px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
   }
 
   body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'Geist', sans-serif;
-    font-weight: 400;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 14px;
     line-height: 1.6;
     min-height: 100vh;
   }
 
   .app {
-    max-width: 860px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 48px 24px 80px;
+    padding: 40px 24px 80px;
   }
 
   /* Header */
   .header {
     display: flex;
-    align-items: baseline;
-    gap: 14px;
-    margin-bottom: 52px;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 40px;
     padding-bottom: 28px;
-    border-bottom: 1.5px solid var(--border);
-    position: relative;
+    border-bottom: 1px solid var(--border);
   }
-  .header::after {
-    content: '';
-    position: absolute;
-    bottom: -1.5px;
-    left: 0;
-    width: 48px;
-    height: 1.5px;
-    background: var(--accent);
+  .header-left {}
+  .header-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
   }
-  .header-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--ink);
+  .header-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+  .header-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-weight: 300;
+    font-style: italic;
+  }
+  .header-badge {
+    background: var(--accent-dim);
+    border: 1px solid rgba(79,142,247,0.25);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 99px;
+    letter-spacing: 0.04em;
+    font-family: var(--mono);
+  }
+
+  /* Two-column grid */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--border-hover); }
+  .card-icon {
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    margin-bottom: 14px;
+    font-size: 15px;
   }
-  .header-icon svg { color: var(--paper); }
-  .header-title {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 28px;
-    font-weight: 400;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-    line-height: 1;
-  }
-  .header-sub {
-    font-size: 13px;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    font-weight: 300;
-    margin-left: auto;
-    letter-spacing: 0.02em;
-  }
-
-  /* Grid layout */
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
-  }
-  @media (max-width: 640px) {
-    .grid { grid-template-columns: 1fr; }
-  }
-
-  /* Cards */
-  .card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 28px;
-    box-shadow: var(--shadow);
-    transition: box-shadow 0.2s;
-  }
-  .card:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08); }
-
-  .card-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 18px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .card-label-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-    flex-shrink: 0;
-  }
-  .card-label-dot.accent { color: var(--accent); }
-  .card-label-dot.green { color: var(--green); }
-
+  .card-icon.blue { background: var(--accent-dim); }
+  .card-icon.green { background: var(--green-dim); }
   .card-title {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 20px;
-    font-weight: 400;
-    margin-bottom: 20px;
-    letter-spacing: -0.01em;
-    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .card-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  /* Session badge */
+  .session-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(79,142,247,0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    display: inline-block;
   }
 
   /* Inputs */
-  input, textarea {
+  .input, .textarea {
     width: 100%;
-    background: var(--paper);
+    background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 10px 14px;
-    font-family: 'Geist', sans-serif;
-    font-size: 14px;
-    color: var(--ink);
-    transition: border-color 0.15s, background 0.15s;
+    border-radius: 8px;
+    padding: 10px 13px;
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 13.5px;
     outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
     margin-bottom: 14px;
-    resize: none;
-    display: block;
   }
-  input::placeholder, textarea::placeholder { color: var(--muted); }
-  input:focus, textarea:focus {
-    border-color: var(--ink);
-    background: #fff;
+  .input::placeholder, .textarea::placeholder { color: var(--text-muted); }
+  .input:focus, .textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,142,247,0.1);
+  }
+  .textarea {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    resize: vertical;
+    line-height: 1.6;
   }
 
   /* Buttons */
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 9px 20px;
+    gap: 7px;
+    padding: 9px 18px;
     border: none;
-    border-radius: 7px;
-    font-family: 'Geist', sans-serif;
-    font-size: 13.5px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
+    transition: all 0.15s;
     letter-spacing: 0.01em;
-    transition: opacity 0.15s, transform 0.1s;
   }
   .btn:active { transform: scale(0.98); }
-  .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-  .btn-primary {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  .btn-primary:hover:not(:disabled) { opacity: 0.88; }
-
-  .btn-success {
-    background: var(--green);
+  .btn-blue {
+    background: var(--accent);
     color: #fff;
   }
-  .btn-success:hover:not(:disabled) { opacity: 0.88; }
+  .btn-blue:hover { background: var(--accent-hover); box-shadow: 0 4px 14px rgba(79,142,247,0.35); }
+  .btn-green {
+    background: var(--green);
+    color: #0d1a10;
+  }
+  .btn-green:hover { filter: brightness(1.1); box-shadow: 0 4px 14px rgba(62,207,122,0.3); }
+  .btn-ghost {
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--border-hover); color: var(--text-primary); }
 
-  /* Loading bar */
+  /* Loading */
   .loading-bar {
-    height: 2px;
-    background: var(--paper-dark);
-    border-radius: 2px;
-    margin-top: 24px;
-    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(79,142,247,0.2);
+    border-radius: 8px;
+    color: var(--accent);
+    font-size: 13px;
+    margin-bottom: 20px;
   }
-  .loading-bar-inner {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    animation: loading 1.4s ease-in-out infinite;
-    width: 40%;
+  .spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(79,142,247,0.3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
   }
-  @keyframes loading {
-    0% { transform: translateX(-200%); }
-    100% { transform: translateX(400%); }
-  }
-  .loading-text {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 10px;
-    letter-spacing: 0.04em;
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* Agent logs */
-  .logs-card {
-    background: #111017;
-    border: 1px solid rgba(255,255,255,0.06);
+  /* Log box */
+  .log-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 24px;
-    margin-top: 20px;
-    animation: fadeUp 0.3s ease;
+    overflow: hidden;
+    margin-bottom: 20px;
   }
-  .logs-header {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #5c5a7a;
-    margin-bottom: 14px;
+  .log-header {
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  .logs-header::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 6px #22c55e;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  .log-entry {
-    display: flex;
-    gap: 12px;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    animation: fadeIn 0.2s ease;
-  }
-  .log-entry:last-child { border-bottom: none; }
-  .log-agent {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: #7c9fdd;
-    white-space: nowrap;
-    min-width: 100px;
-    font-weight: 500;
-  }
-  .log-msg {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: #8a8898;
-    line-height: 1.5;
-  }
-
-  /* Brief card */
-  .brief-card {
-    margin-top: 20px;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.35s ease;
-  }
-  .brief-card-header {
-    padding: 18px 28px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--paper);
-  }
-  .brief-card-title {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 17px;
-    font-weight: 400;
-  }
-  .brief-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    padding: 4px 10px;
-    background: var(--accent-dim);
-    color: var(--accent);
-    border-radius: 20px;
-    text-transform: uppercase;
-  }
-  .brief-content {
-    padding: 28px;
-    font-size: 14.5px;
-    line-height: 1.75;
-    color: #2a2832;
-  }
-  .brief-content h1, .brief-content h2, .brief-content h3 {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-weight: 400;
-    letter-spacing: -0.01em;
-    margin: 20px 0 8px;
-    color: var(--ink);
-  }
-  .brief-content h1 { font-size: 22px; }
-  .brief-content h2 { font-size: 18px; }
-  .brief-content h3 { font-size: 16px; }
-  .brief-content p { margin-bottom: 10px; }
-  .brief-content ul, .brief-content ol { padding-left: 20px; margin-bottom: 10px; }
-  .brief-content li { margin-bottom: 4px; }
-  .brief-content strong { font-weight: 600; color: var(--ink); }
-
-  /* Post-meeting result */
-  .result-card {
-    margin-top: 20px;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.35s ease;
-  }
-  .result-header {
-    padding: 18px 28px;
-    background: var(--green-dim);
-    border-bottom: 1px solid rgba(30,107,74,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .result-title {
-    font-family: 'Instrument Serif', Georgia, serif;
-    font-size: 17px;
-    color: var(--green);
-  }
-  .result-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    padding: 4px 10px;
-    background: var(--green);
-    color: #fff;
-    border-radius: 20px;
-    text-transform: uppercase;
-  }
-  .result-body { padding: 28px; }
-  .result-summary {
-    font-size: 14.5px;
-    line-height: 1.7;
-    color: #2a2832;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 20px;
-  }
-  .stats-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-  .stat-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 14px;
-    background: var(--paper);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .stat-pill strong { color: var(--ink); font-weight: 500; }
-
-  .action-items-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 12px;
+    color: var(--text-muted);
   }
-  .action-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-  .action-item {
+  .log-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .log-entries {
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .log-entries::-webkit-scrollbar { width: 4px; }
+  .log-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .log-entry { display: flex; gap: 10px; }
+  .log-agent { color: var(--green); min-width: 90px; }
+  .log-time { color: var(--text-muted); }
+  .log-msg { color: var(--text-secondary); }
+
+  /* Brief */
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .result-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    gap: 10px;
+  }
+  .result-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+  }
+  .result-tag {
+    font-size: 10.5px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.04em;
+    font-family: var(--mono);
+  }
+  .tag-blue { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(79,142,247,0.2); }
+  .tag-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(62,207,122,0.2); }
+  .result-body { padding: 20px; }
+
+  /* Markdown */
+  .md-content { color: var(--text-secondary); font-size: 13.5px; line-height: 1.75; }
+  .md-content h1,.md-content h2,.md-content h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; margin: 16px 0 6px; }
+  .md-content p { margin-bottom: 10px; }
+  .md-content ul,.md-content ol { padding-left: 18px; margin-bottom: 10px; }
+  .md-content li { margin-bottom: 4px; }
+  .md-content strong { color: var(--text-primary); font-weight: 500; }
+  .md-content code { font-family: var(--mono); font-size: 12px; background: var(--surface-2); padding: 2px 5px; border-radius: 4px; color: var(--accent); }
+
+  /* Post-meeting stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
-    padding: 12px 16px;
-    background: var(--paper);
+    margin-bottom: 20px;
+  }
+  .stat {
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 8px;
-    font-size: 13.5px;
+    padding: 14px;
+    text-align: center;
   }
-  .action-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    margin-top: 5px;
-    flex-shrink: 0;
-  }
-  .action-owner {
+  .stat-num {
+    font-size: 24px;
     font-weight: 600;
-    color: var(--ink);
-    margin-right: 4px;
+    color: var(--text-primary);
+    font-family: var(--mono);
+    letter-spacing: -0.02em;
   }
-  .action-task { color: #2a2832; }
-  .action-due {
-    margin-left: auto;
-    font-family: 'DM Mono', monospace;
+  .stat-label {
     font-size: 11px;
-    color: var(--muted);
-    white-space: nowrap;
-    padding-left: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
   }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+  /* Summary */
+  .summary-text {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
   }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+
+  /* Decisions */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .decisions-list { list-style: none; margin-bottom: 20px; }
+  .decision-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+    color: var(--text-secondary);
+  }
+  .decision-item:last-child { border-bottom: none; }
+  .decision-item::before {
+    content: '—';
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Action items */
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+  .action-item:hover { border-color: var(--border-hover); }
+  .action-owner {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--mono);
+  }
+  .action-task {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .priority-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+  .priority-high { background: var(--red-dim); color: var(--red); border: 1px solid rgba(245,86,86,0.2); }
+  .priority-medium { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,166,35,0.2); }
+  .priority-low { background: var(--green-dim); color: var(--green); border: 1px solid rgba(62,207,122,0.2); }
+  .action-due {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    flex-shrink: 0;
+  }
+
+  /* Bottom section */
+  .bottom-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .bottom-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .bottom-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .count-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 3px 9px;
+    border-radius: 99px;
+  }
+
+  @media (max-width: 640px) {
+    .panel-grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .header { flex-direction: column; align-items: flex-start; gap: 12px; }
   }
 `;
 
@@ -447,39 +471,54 @@ export default function App() {
   const [postResult, setPostResult] = useState(null);
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState('');
-  const logsRef = useRef(null);
-
-  useEffect(() => {
-    if (logsRef.current) logsRef.current.scrollTop = logsRef.current.scrollHeight;
-  }, [logs]);
+  const [actionItems, setActionItems] = useState([]);
+  const [actionItemsLoaded, setActionItemsLoaded] = useState(false);
 
   async function prepareMeeting() {
-    setLoading('Preparing meeting brief…');
-    setBrief(''); setLogs([]);
+    if (!eventId.trim()) { alert('Enter a Calendar Event ID'); return; }
+    setLoading('Generating meeting brief…');
+    setBrief(''); setLogs([]); setPostResult(null);
     try {
       const res = await axios.post(`${API}/prepare`, { event_id: eventId });
       setMeetingId(res.data.meeting_id);
-      setBrief(res.data.brief);
-      pollLogs(res.data.meeting_id);
-    } catch (e) { alert(e.message); }
+      setBrief(res.data.brief || '');
+      await pollLogs(res.data.meeting_id);
+    } catch (e) { alert('Error: ' + (e.response?.data?.detail || e.message)); }
     setLoading('');
   }
 
   async function processMeeting() {
+    if (!meetingId) { alert('Prepare a meeting first'); return; }
+    if (!transcript.trim()) { alert('Paste a transcript'); return; }
     setLoading('Processing transcript…');
     setPostResult(null);
     try {
       const res = await axios.post(`${API}/process`, { meeting_id: meetingId, transcript });
       setPostResult(res.data);
-      pollLogs(meetingId);
-    } catch (e) { alert(e.message); }
+      await pollLogs(meetingId);
+    } catch (e) { alert('Error: ' + (e.response?.data?.detail || e.message)); }
     setLoading('');
   }
 
   async function pollLogs(id) {
-    const res = await axios.get(`${API}/session/${id}`);
-    setLogs(res.data.agent_logs || []);
+    try {
+      const res = await axios.get(`${API}/session/${id}`);
+      setLogs(res.data.agent_logs || []);
+    } catch (e) {}
   }
+
+  async function loadActionItems() {
+    try {
+      const res = await axios.get(`${API}/action-items`);
+      setActionItems(res.data);
+      setActionItemsLoaded(true);
+    } catch (e) {}
+  }
+
+  const getPriorityClass = (p) => {
+    if (!p) return 'priority-medium';
+    return `priority-${p.toLowerCase()}`;
+  };
 
   return (
     <>
@@ -488,85 +527,77 @@ export default function App() {
 
         {/* Header */}
         <header className="header">
-          <div className="header-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
+          <div className="header-left">
+            <div className="header-eyebrow">Multi-Agent AI</div>
+            <h1 className="header-title">Meeting Assistant</h1>
+            <p className="header-sub">Powered by Gemini 1.5 Pro + Google Cloud</p>
           </div>
-          <h1 className="header-title">Meeting Assistant</h1>
+          <div className="header-badge">v1.0.0</div>
         </header>
 
-        {/* Two-column cards */}
-        <div className="grid">
+        {/* Two panels */}
+        <div className="panel-grid">
           {/* Pre-meeting */}
           <div className="card">
-            <div className="card-label">
-              <span className="card-label-dot accent" />
-              Pre-meeting
+            <div className="card-icon blue">📋</div>
+            <div className="card-title">Pre-Meeting Brief</div>
+            <div className="card-desc">
+              Enter a Google Calendar event ID to generate an AI-powered research brief before your meeting.
             </div>
-            <h2 className="card-title">Prepare Brief</h2>
             <input
-              placeholder="Google Calendar Event ID"
+              className="input"
+              placeholder="Calendar Event ID (e.g. abc123xyz)"
               value={eventId}
               onChange={e => setEventId(e.target.value)}
             />
-            <button
-              className="btn btn-primary"
-              onClick={prepareMeeting}
-              disabled={!!loading || !eventId}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/>
-              </svg>
-              Generate Brief
+            {meetingId && (
+              <div className="session-id">Session: {meetingId}</div>
+            )}
+            <button className="btn btn-blue" onClick={prepareMeeting}>
+              <span>↗</span> Prepare Brief
             </button>
           </div>
 
           {/* Post-meeting */}
           <div className="card">
-            <div className="card-label">
-              <span className="card-label-dot green" />
-              Post-meeting
+            <div className="card-icon green">✓</div>
+            <div className="card-title">Post-Meeting</div>
+            <div className="card-desc">
+              Paste a meeting transcript to extract action items, decisions, and send notifications automatically.
             </div>
-            <h2 className="card-title">Process Transcript</h2>
             <textarea
-              placeholder="Paste your meeting transcript here…"
+              className="textarea"
+              placeholder="Paste meeting transcript here…"
+              rows={5}
               value={transcript}
               onChange={e => setTranscript(e.target.value)}
-              rows={4}
             />
-            <button
-              className="btn btn-success"
-              onClick={processMeeting}
-              disabled={!!loading || !transcript}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              Process
+            <button className="btn btn-green" onClick={processMeeting}>
+              <span>⚡</span> Process Transcript
             </button>
           </div>
         </div>
 
-        {/* Loading state */}
+        {/* Loading */}
         {loading && (
-          <div style={{ marginTop: 4 }}>
-            <div className="loading-bar"><div className="loading-bar-inner" /></div>
-            <p className="loading-text">{loading}</p>
+          <div className="loading-bar">
+            <div className="spinner" />
+            {loading}
           </div>
         )}
 
         {/* Agent logs */}
         {logs.length > 0 && (
-          <div className="logs-card">
-            <div className="logs-header">Agent Logs</div>
-            <div ref={logsRef} style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <div className="log-box">
+            <div className="log-header">
+              <div className="log-dot" />
+              Agent Logs
+            </div>
+            <div className="log-entries">
               {logs.map((l, i) => (
                 <div key={i} className="log-entry">
                   <span className="log-agent">[{l.agent}]</span>
+                  <span className="log-time">{l.timestamp?.substring(11, 19)}</span>
                   <span className="log-msg">{l.message}</span>
                 </div>
               ))}
@@ -574,15 +605,17 @@ export default function App() {
           </div>
         )}
 
-        {/* Meeting brief */}
+        {/* Brief */}
         {brief && (
-          <div className="brief-card">
-            <div className="brief-card-header">
-              <span className="brief-card-title">Meeting Brief</span>
-              <span className="brief-badge">Ready</span>
+          <div className="result-card">
+            <div className="result-header">
+              <span className="result-title">Meeting Brief</span>
+              <span className="result-tag tag-blue">AI Generated</span>
             </div>
-            <div className="brief-content">
-              <ReactMarkdown>{brief}</ReactMarkdown>
+            <div className="result-body">
+              <div className="md-content">
+                <ReactMarkdown>{brief}</ReactMarkdown>
+              </div>
             </div>
           </div>
         )}
@@ -592,42 +625,91 @@ export default function App() {
           <div className="result-card">
             <div className="result-header">
               <span className="result-title">Meeting Processed</span>
-              <span className="result-badge">✓ Complete</span>
+              <span className="result-tag tag-green">Complete</span>
             </div>
             <div className="result-body">
-              <p className="result-summary">{postResult.summary}</p>
 
+              {/* Stats */}
               <div className="stats-row">
-                <span className="stat-pill">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                  <strong>{postResult.tasks_created}</strong> tasks created
-                </span>
-                <span className="stat-pill">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                  <strong>{postResult.emails_sent}</strong> emails sent
-                </span>
+                <div className="stat">
+                  <div className="stat-num">{postResult.tasks_created ?? 0}</div>
+                  <div className="stat-label">Action Items</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-num">{postResult.emails_sent ?? 0}</div>
+                  <div className="stat-label">Emails Sent</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-num">{postResult.decisions?.length ?? 0}</div>
+                  <div className="stat-label">Decisions</div>
+                </div>
               </div>
 
-              {postResult.action_items?.length > 0 && (
+              {/* Summary */}
+              {postResult.summary && (
+                <div className="summary-text">{postResult.summary}</div>
+              )}
+
+              {/* Decisions */}
+              {postResult.decisions?.length > 0 && (
                 <>
-                  <p className="action-items-label">Action Items</p>
-                  <ul className="action-list">
-                    {postResult.action_items.map((a, i) => (
-                      <li key={i} className="action-item">
-                        <span className="action-dot" />
-                        <span>
-                          <span className="action-owner">{a.owner}:</span>
-                          <span className="action-task">{a.task}</span>
-                        </span>
-                        <span className="action-due">{a.due_date}</span>
-                      </li>
+                  <div className="section-label">Key Decisions</div>
+                  <ul className="decisions-list">
+                    {postResult.decisions.map((d, i) => (
+                      <li key={i} className="decision-item">{d}</li>
                     ))}
                   </ul>
                 </>
               )}
+
+              {/* Action items */}
+              {postResult.action_items?.length > 0 && (
+                <>
+                  <div className="section-label">Action Items</div>
+                  {postResult.action_items.map((a, i) => (
+                    <div key={i} className="action-item">
+                      <span className="action-owner">{a.owner}</span>
+                      <span className="action-task">{a.task}</span>
+                      <span className={`priority-badge ${getPriorityClass(a.priority)}`}>
+                        {a.priority}
+                      </span>
+                      <span className="action-due">{a.due_date}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+
             </div>
           </div>
         )}
+
+        {/* All open action items */}
+        <div className="bottom-section">
+          <div className="bottom-header">
+            <div className="bottom-title">Open Action Items</div>
+            {actionItemsLoaded && (
+              <span className="count-badge">{actionItems.length} items</span>
+            )}
+          </div>
+          <button className="btn btn-ghost" onClick={loadActionItems}>
+            Load All Open Items
+          </button>
+
+          {actionItems.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              {actionItems.map((a, i) => (
+                <div key={i} className="action-item">
+                  <span className="action-owner">{a.owner}</span>
+                  <span className="action-task">{a.task}</span>
+                  <span className={`priority-badge ${getPriorityClass(a.priority)}`}>
+                    {a.priority}
+                  </span>
+                  <span className="action-due">{a.due_date}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
       </div>
     </>

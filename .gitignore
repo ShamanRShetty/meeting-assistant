@@ -1,53 +1,30 @@
-# --------------------
-# Python (Backend)
-# --------------------
 venv/
 *.pyc
 __pycache__/
 
-# Environment
 .env
 
-# Credentials (DO NOT COMMIT THESE)
 credentials.json
 token.json
 oauth_credentials.json
 
-# Ignore all JSON except requirements
-# Ignore sensitive JSON only
-credentials.json
-token.json
-oauth_credentials.json
-
-# Allow important JSON files
 !frontend/package.json
 !frontend/package-lock.json
 !package.json
 !requirements.txt
 
-# --------------------
-# React / Node (Frontend)
-# --------------------
 frontend/node_modules/
 frontend/build/
 frontend/.env
 
-# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Lock files (optional — you chose to ignore)
 frontend/package-lock.json
 
-# --------------------
-# Global Node safety (in case created again)
-# --------------------
 node_modules/
 build/
 dist/
 
-# --------------------
-# Misc
-# --------------------
 .DS_Store

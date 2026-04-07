@@ -1,11 +1,10 @@
 from googleapiclient.discovery import build
+from tools.auth import get_credentials
 from email.mime.text import MIMEText
 import base64, pickle, os
  
 def _get_service():
-    with open(os.getenv('TOKEN_FILE', 'token.json'), 'rb') as f:
-        creds = pickle.load(f)
-    return build('gmail', 'v1', credentials=creds)
+    return build('gmail', 'v1', credentials=get_credentials())
  
 def send_email(to: str, subject: str, body: str) -> dict:
     service = _get_service()

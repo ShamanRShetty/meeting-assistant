@@ -1,12 +1,11 @@
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
+from tools.auth import get_credentials
 import pickle, os
 from datetime import datetime, timedelta, timezone
  
 def _get_service():
-    with open(os.getenv('TOKEN_FILE', 'token.json'), 'rb') as f:
-        creds = pickle.load(f)
-    return build('calendar', 'v3', credentials=creds)
+    return build('calendar', 'v3', credentials=get_credentials())
  
 def get_upcoming_events(hours_ahead: int = 2) -> list[dict]:
     """Fetch events in the next N hours."""

@@ -36,7 +36,7 @@ const styles = `
     background: var(--bg);
     color: var(--text-primary);
     font-family: var(--font);
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.6;
     min-height: 100vh;
   }
@@ -155,7 +155,7 @@ const styles = `
     padding: 10px 13px;
     color: var(--text-primary);
     font-family: var(--font);
-    font-size: 13.5px;
+    font-size: 15px;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     margin-bottom: 14px;
@@ -167,7 +167,7 @@ const styles = `
   }
   .textarea {
     font-family: var(--mono);
-    font-size: 12.5px;
+    font-size: 14px;
     resize: vertical;
     line-height: 1.6;
   }
@@ -305,7 +305,7 @@ const styles = `
   .result-body { padding: 20px; }
 
   /* Markdown */
-  .md-content { color: var(--text-secondary); font-size: 13.5px; line-height: 1.75; }
+  .md-content { color: var(--text-secondary); font-size: 15px; line-height: 1.75; }
   .md-content h1,.md-content h2,.md-content h3 { color: var(--text-primary); font-size: 14px; font-weight: 600; margin: 16px 0 6px; }
   .md-content p { margin-bottom: 10px; }
   .md-content ul,.md-content ol { padding-left: 18px; margin-bottom: 10px; }
@@ -344,7 +344,7 @@ const styles = `
 
   /* Summary */
   .summary-text {
-    font-size: 13.5px;
+    font-size: 15px;
     color: var(--text-secondary);
     line-height: 1.65;
     margin-bottom: 20px;
@@ -370,7 +370,7 @@ const styles = `
     gap: 10px;
     padding: 8px 0;
     border-bottom: 1px solid var(--border);
-    font-size: 13.5px;
+    font-size: 14.5px;
     color: var(--text-secondary);
   }
   .decision-item:last-child { border-bottom: none; }
@@ -406,7 +406,7 @@ const styles = `
   }
   .action-task {
     flex: 1;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--text-secondary);
   }
   .priority-badge {
@@ -528,11 +528,8 @@ export default function App() {
         {/* Header */}
         <header className="header">
           <div className="header-left">
-            <div className="header-eyebrow">Multi-Agent AI</div>
             <h1 className="header-title">Meeting Assistant</h1>
-            <p className="header-sub">Powered by Gemini 1.5 Pro + Google Cloud</p>
           </div>
-          <div className="header-badge">v1.0.0</div>
         </header>
 
         {/* Two panels */}
@@ -572,9 +569,10 @@ export default function App() {
               value={transcript}
               onChange={e => setTranscript(e.target.value)}
             />
-            <button className="btn btn-green" onClick={processMeeting}>
-              <span>⚡</span> Process Transcript
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-ghost" onClick={() => setTranscript('')}>Clear</button>
+              <button className="btn btn-green" onClick={processMeeting}><span>⚡</span> Process Transcript</button>
+            </div>
           </div>
         </div>
 

@@ -4,15 +4,21 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/meeting-assistant:latest'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/meeting-assistant:latest'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/meeting-assistant/app:latest'
       - '.'
- 
-  # Push to Container Registry
+
+  # Push to Artifact Registry with retry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'gcr.io/$PROJECT_ID/meeting-assistant:latest']
- 
+    entrypoint: 'bash'          
+    args:
+      - '-c'
+      - |
+        for i in 1 2 3; do
+          docker push us-central1-docker.pkg.dev/$PROJECT_ID/meeting-assistant/app:latest && break
+          echo "Push failed, retrying in 60s..."
+          sleep 60
+        done
+
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
@@ -20,15 +26,16 @@ steps:
       - 'run'
       - 'deploy'
       - 'meeting-assistant'
-      - '--image=gcr.io/$PROJECT_ID/meeting-assistant:latest'
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/meeting-assistant/app:latest'
       - '--region=us-central1'
       - '--platform=managed'
       - '--allow-unauthenticated'
       - '--memory=2Gi'
       - '--cpu=2'
       - '--timeout=300'
-      - '--set-env-vars=PROJECT_ID=$PROJECT_ID,LOCATION=us-central1'
+      - '--set-env-vars=PROJECT_ID=$PROJECT_ID,LOCATION=us-central1,TOKEN_SECRET=meeting-assistant-token'
       - '--service-account=meeting-agent-sa@$PROJECT_ID.iam.gserviceaccount.com'
- 
+      - '--quiet'
+
 images:
-  - 'gcr.io/$PROJECT_ID/meeting-assistant:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/meeting-assistant/app:latest'  

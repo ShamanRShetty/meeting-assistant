@@ -1,10 +1,9 @@
 from googleapiclient.discovery import build
+from tools.auth import get_credentials
 import pickle, os
  
 def _get_service():
-    with open(os.getenv('TOKEN_FILE', 'token.json'), 'rb') as f:
-        creds = pickle.load(f)
-    return build('drive', 'v3', credentials=creds)
+    return build('drive', 'v3', credentials=get_credentials())
  
 def search_docs(query: str, max_results: int = 5) -> list[dict]:
     """Search Drive for relevant documents."""

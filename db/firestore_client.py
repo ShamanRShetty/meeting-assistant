@@ -58,3 +58,54 @@ def get_open_action_items(meeting_id: str = None) -> list[dict]:
     if meeting_id:
         q = q.where('meeting_id', '==', meeting_id)
     return [d.to_dict() | {'id': d.id} for d in q.stream()]
+
+# ═══════════════════════════════════════════════════════════════
+# DIFFERENTIATOR ADDITIONS — paste below existing functions
+# ═══════════════════════════════════════════════════════════════
+ 
+# ── D2: Meeting Debt ────────────────────────────────────────────
+def mark_action_item_done(item_id: str):
+    """Mark a single action item as complete."""
+    get_db().collection('action_items').document(item_id).update({
+        'status': 'done',
+        'completed_at': datetime.now(timezone.utc)
+    })
+ 
+def get_debt_summary() -> dict:
+    """
+    Returns open/overdue counts for the debt dashboard.
+    'overdue' = open items whose due_date is before today and not 'TBD'.
+    """
+    from datetime import date
+    today_str = date.today().isoformat()  # e.g. '2025-04-07'
+    all_open = get_open_action_items()
+    overdue = []
+    for item in all_open:
+        dd = item.get('due_date', 'TBD')
+        if dd != 'TBD' and dd < today_str:
+            overdue.append(item)
+    return {
+        'open': len(all_open),
+        'overdue': len(overdue),
+        'overdue_items': overdue,
+        'open_items': all_open,
+    }
+ 
+# ── D4: ROI Store ───────────────────────────────────────────────
+def save_roi_score(meeting_id: str, roi_data: dict):
+    """Persist ROI result so it can be queried for trends later."""
+    get_db().collection('roi_scores').document(meeting_id).set({
+        **roi_data,
+        'meeting_id': meeting_id,
+        'scored_at': datetime.now(timezone.utc),
+    })
+ 
+def get_roi_history(limit: int = 10) -> list[dict]:
+    """Fetch last N ROI scores ordered by most recent first."""
+    docs = (
+        get_db().collection('roi_scores')
+        .order_by('scored_at', direction='DESCENDING')
+        .limit(limit)
+        .stream()
+    )
+    return [d.to_dict() | {'id': d.id} for d in docs]

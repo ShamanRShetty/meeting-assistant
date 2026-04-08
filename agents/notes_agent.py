@@ -1,7 +1,7 @@
 import vertexai
 from vertexai.generative_models import GenerativeModel
 from db.firestore_client import append_log
-import os, json
+import os, json, re
 from datetime import date
 
 vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION'))
@@ -31,13 +31,21 @@ Return a JSON object with:
 - topics_discussed (list of strings)
 - sentiment (string: 'positive' | 'neutral' | 'tense')
 
-Respond ONLY with valid JSON, no markdown."""
+Respond ONLY with valid JSON, no markdown, no code fences."""
 
     response = model.generate_content(prompt)
+    raw = response.text.strip()
+
+    # Strip markdown code fences if the model wraps the response anyway
+    # e.g. ```json { ... } ``` or ``` { ... } ```
+    raw = re.sub(r'^```(?:json)?\s*', '', raw)
+    raw = re.sub(r'\s*```$', '', raw.strip())
+    raw = raw.strip()
+
     try:
-        result = json.loads(response.text.strip())
+        result = json.loads(raw)
     except Exception:
-        result = {'summary': response.text, 'decisions': [],
+        result = {'summary': raw, 'decisions': [],
                   'action_items': [], 'topics_discussed': [], 'sentiment': 'neutral'}
 
     append_log(meeting_id, 'notes_agent',

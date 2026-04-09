@@ -7,7 +7,7 @@ import uvicorn, os, uuid, json
 
 load_dotenv()
 
-app = FastAPI(title='Meeting Assistant', version='3.0.0')
+app = FastAPI(title='Meeting Assistant', version='3.1.0')
 
 # ── OAuth config ──────────────────────────────────────────────────────────────
 SCOPES = [
@@ -21,9 +21,16 @@ SCOPES = [
 
 CLIENT_ID     = os.getenv('GOOGLE_CLIENT_ID', '')
 CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
-# Set this to your deployed Cloud Run URL, e.g. https://meeting-assistant-xxx-uc.a.run.app
-APP_URL = os.getenv('APP_URL', 'http://localhost:8080')
+APP_URL       = os.getenv('APP_URL', 'http://localhost:8080')
 REDIRECT_URI  = f'{APP_URL}/api/auth/callback'
+
+# ── Demo mode constants ───────────────────────────────────────────────────────
+DEMO_USER_ID    = "demo_user"
+DEMO_USER_EMAIL = "demo@meridian.app"
+
+
+def _is_demo_user(user_id: str | None) -> bool:
+    return not user_id or user_id == DEMO_USER_ID
 
 
 def _get_oauth_flow():
@@ -66,10 +73,12 @@ def _calendar_service(user_id: str):
 # ── Request models ────────────────────────────────────────────────────────────
 class PrepareRequest(BaseModel):
     event_id: str | None = None
+    demo_mode: bool = False
 
 class ProcessRequest(BaseModel):
     meeting_id: str | None = None
     transcript: str
+    demo_mode: bool = False
 
 
 def _new_id() -> str:
@@ -79,7 +88,7 @@ def _new_id() -> str:
 # ── Health ────────────────────────────────────────────────────────────────────
 @app.get('/api/health')
 def health():
-    return {'status': 'ok', 'version': '3.0.0'}
+    return {'status': 'ok', 'version': '3.1.0'}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -90,30 +99,35 @@ def health():
 def auth_status(request: Request):
     """Returns whether the current user is authenticated."""
     uid = _get_user_id(request)
-    if not uid:
-        return {'authenticated': False, 'user_id': None, 'email': None}
+
+    # Demo mode — always valid, no DB lookup needed
+    if _is_demo_user(uid):
+        return {
+            'authenticated': False,
+            'demo_mode': True,
+            'user_id': DEMO_USER_ID,
+            'email': DEMO_USER_EMAIL,
+        }
 
     try:
         from db.firestore_client import get_db
         doc = get_db().collection('user_tokens').document(uid).get()
         if not doc.exists:
-            return {'authenticated': False, 'user_id': uid, 'email': None}
+            return {'authenticated': False, 'demo_mode': True, 'user_id': uid, 'email': None}
         data = doc.to_dict()
         return {
             'authenticated': True,
+            'demo_mode': False,
             'user_id': uid,
             'email': data.get('email'),
         }
     except Exception as e:
-        return {'authenticated': False, 'user_id': None, 'email': None, 'error': str(e)}
+        return {'authenticated': False, 'demo_mode': True, 'user_id': None, 'email': None, 'error': str(e)}
 
 
 @app.get('/api/auth/login')
 def auth_login(request: Request):
-    """
-    Start the Google OAuth2 flow.
-    Redirects the user to Google's consent screen.
-    """
+    """Start the Google OAuth2 flow."""
     if not CLIENT_ID or not CLIENT_SECRET:
         raise HTTPException(
             status_code=500,
@@ -124,10 +138,9 @@ def auth_login(request: Request):
     auth_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true',
-        prompt='consent',          # force consent so we always get refresh_token
+        prompt='consent',
     )
 
-    # Store state in a short-lived cookie for CSRF protection
     response = RedirectResponse(url=auth_url)
     response.set_cookie('oauth_state', state, max_age=600, httponly=True, samesite='lax')
     return response
@@ -135,10 +148,7 @@ def auth_login(request: Request):
 
 @app.get('/api/auth/callback')
 def auth_callback(request: Request, code: str = None, state: str = None, error: str = None):
-    """
-    Google redirects here after user grants permission.
-    Exchanges the code for tokens, stores them in Firestore, sets a session cookie.
-    """
+    """Google redirects here after user grants permission."""
     if error:
         return RedirectResponse(url=f'/?auth_error={error}')
 
@@ -150,33 +160,27 @@ def auth_callback(request: Request, code: str = None, state: str = None, error: 
         flow.fetch_token(code=code)
         creds = flow.credentials
 
-        # Get user email from Google
         from googleapiclient.discovery import build
         oauth2_service = build('oauth2', 'v2', credentials=creds)
         user_info = oauth2_service.userinfo().get().execute()
         email = user_info.get('email', '')
 
-        # Use email-based user_id (stable across sessions)
         user_id = email.replace('@', '_at_').replace('.', '_dot_')
 
-        # Save credentials to Firestore
         from tools.auth import save_user_credentials
         save_user_credentials(user_id, creds)
 
-        # Also store the email alongside token data
         from db.firestore_client import get_db
         get_db().collection('user_tokens').document(user_id).update({'email': email})
 
-        # Set session cookie and redirect to app
         response = RedirectResponse(url='/?auth=success')
         response.set_cookie(
             'meridian_user_id',
             user_id,
-            max_age=60 * 60 * 24 * 30,   # 30 days
+            max_age=60 * 60 * 24 * 30,
             httponly=True,
             samesite='lax',
         )
-        # Clear the state cookie
         response.delete_cookie('oauth_state')
         return response
 
@@ -195,13 +199,18 @@ def auth_logout():
 @app.get('/api/events')
 def get_upcoming_events(request: Request):
     """
-    Returns up to 10 upcoming calendar events for the signed-in user.
-    Returns {auth_required: true} if not authenticated.
+    Returns upcoming calendar events.
+    Demo users get hardcoded demo events — no Google API call.
+    Authenticated users get their real calendar.
     """
     uid = _get_user_id(request)
-    if not uid:
-        return {'auth_required': True, 'fallback': True}
 
+    # ── DEMO MODE ────────────────────────────────────────────────────────────
+    if _is_demo_user(uid):
+        from demo_data import get_demo_events
+        return get_demo_events()
+
+    # ── AUTHENTICATED MODE ────────────────────────────────────────────────────
     try:
         from datetime import datetime, timedelta, timezone
         service = _calendar_service(uid)
@@ -246,10 +255,12 @@ def get_upcoming_events(request: Request):
         return formatted
 
     except ValueError:
-        # Credentials missing/expired — ask user to re-authenticate
-        return {'auth_required': True, 'fallback': True}
+        # Credentials missing/expired — fall back to demo events
+        from demo_data import get_demo_events
+        return get_demo_events()
     except Exception as e:
-        return {'error': str(e), 'fallback': True}
+        from demo_data import get_demo_events
+        return get_demo_events()
 
 
 # ── Transcription ─────────────────────────────────────────────────────────────
@@ -314,27 +325,93 @@ def _transcribe_with_speech_api(audio_bytes: bytes, ext: str) -> str:
 @app.post('/api/prepare')
 async def prepare(req: PrepareRequest, request: Request):
     uid = _get_user_id(request)
+    is_demo = _is_demo_user(uid) or req.demo_mode
+
     try:
-        from db.firestore_client import create_session
+        from db.firestore_client import create_session, update_session
 
         if not req.event_id:
             meeting_id = _new_id()
-            create_session(meeting_id, {'event_id': None, 'source': 'manual', 'user_id': uid})
+            create_session(meeting_id, {
+                'event_id': None,
+                'source': 'manual',
+                'user_id': uid or DEMO_USER_ID,
+                'demo_mode': is_demo,
+            })
             return {
                 'meeting_id': meeting_id,
                 'brief': None,
                 'meeting_data': {},
                 'conflict_result': {'conflicts_found': 0, 'proposals': []},
                 'agenda_result': {},
+                'demo_mode': is_demo,
                 'message': 'Session created. Paste or record your transcript to process.',
             }
 
-        # Inject user credentials into the agents via env override
-        # Agents use tools/auth.py — we pass user_id via a context var
+        # ── DEMO MODE: skip Google Calendar, use demo event ───────────────
+        if is_demo:
+            from demo_data import get_demo_event_by_id, get_demo_calendar_data
+            meeting_id = _new_id()
+            cal_data = get_demo_calendar_data()
+            cal_data['event_id'] = req.event_id
+
+            create_session(meeting_id, {
+                'event_id': req.event_id,
+                'source': 'demo',
+                'user_id': DEMO_USER_ID,
+                'demo_mode': True,
+                'meeting_data': cal_data,
+                'status': 'researching',
+            })
+
+            # Generate brief via research agent (Vertex AI — works without OAuth)
+            from agents import research_agent
+            research_data = research_agent.run_demo(
+                meeting_id,
+                cal_data.get('title', ''),
+                cal_data.get('attendees', []),
+            )
+
+            import vertexai
+            from vertexai.generative_models import GenerativeModel
+            vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION', 'us-central1'))
+            model = GenerativeModel('gemini-2.5-flash')
+
+            prompt = f"""
+Assemble a concise pre-meeting brief for a busy professional.
+
+MEETING DETAILS:
+{json.dumps(cal_data, indent=2)}
+
+RESEARCH CONTEXT:
+{research_data.get('research_brief', 'N/A')}
+
+Write a clean, scannable brief with sections:
+## Meeting snapshot (title, time, attendees, type)
+## What to know going in (2-4 bullet points)
+## Agenda to cover
+## Suggested questions to ask
+
+Keep it under 400 words. Plain markdown only."""
+
+            brief = model.generate_content(prompt).text
+            update_session(meeting_id, {'brief': brief, 'status': 'ready'})
+
+            return {
+                'meeting_id': meeting_id,
+                'brief': brief,
+                'meeting_data': cal_data,
+                'conflict_result': {'conflicts_found': 0, 'proposals': []},
+                'agenda_result': {'status': 'demo_mode'},
+                'demo_mode': True,
+            }
+
+        # ── AUTHENTICATED MODE ────────────────────────────────────────────
         _set_request_user(uid)
         from agents.orchestrator import prepare_meeting
         result = prepare_meeting(req.event_id)
         _clear_request_user()
+        result['demo_mode'] = False
         return result
 
     except Exception as e:
@@ -346,17 +423,29 @@ async def prepare(req: PrepareRequest, request: Request):
 @app.post('/api/process')
 async def process(req: ProcessRequest, request: Request):
     uid = _get_user_id(request)
+    is_demo = _is_demo_user(uid) or req.demo_mode
+
     try:
         from agents.orchestrator import process_meeting
         from db.firestore_client import create_session, get_session
 
         meeting_id = req.meeting_id or _new_id()
         if not get_session(meeting_id):
-            create_session(meeting_id, {'event_id': None, 'source': 'transcript_only', 'user_id': uid})
+            create_session(meeting_id, {
+                'event_id': None,
+                'source': 'demo' if is_demo else 'transcript_only',
+                'user_id': uid or DEMO_USER_ID,
+                'demo_mode': is_demo,
+            })
 
-        _set_request_user(uid)
+        # Both demo and authenticated users go through the same orchestrator.
+        # The orchestrator uses Vertex AI (Gemini) which doesn't need OAuth.
+        # Only the calendar/drive/gmail tools need OAuth — and post-processing
+        # doesn't call those tools.
+        _set_request_user(uid or DEMO_USER_ID)
         result = process_meeting(meeting_id, req.transcript)
         _clear_request_user()
+        result['demo_mode'] = is_demo
         return result
 
     except Exception as e:
@@ -364,7 +453,22 @@ async def process(req: ProcessRequest, request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Per-request user context (simple thread-local alternative) ────────────────
+# ── Demo transcript endpoint ──────────────────────────────────────────────────
+@app.get('/api/demo/transcript')
+def get_demo_transcript():
+    """Returns the built-in demo transcript for quick testing."""
+    from demo_data import DEMO_TRANSCRIPT
+    return {'transcript': DEMO_TRANSCRIPT}
+
+
+@app.get('/api/demo/events')
+def get_demo_events_endpoint():
+    """Returns demo calendar events (same as /api/events for unauthenticated users)."""
+    from demo_data import get_demo_events
+    return get_demo_events()
+
+
+# ── Per-request user context ──────────────────────────────────────────────────
 import threading
 _user_ctx = threading.local()
 
@@ -430,6 +534,16 @@ def list_conflicts():
 @app.post('/api/conflicts/{proposal_id}/approve')
 def approve_conflict(proposal_id: str, request: Request):
     uid = _get_user_id(request)
+
+    if _is_demo_user(uid):
+        # In demo mode, just mark as approved without touching Calendar API
+        try:
+            from db.firestore_client import get_db
+            get_db().collection('conflict_proposals').document(proposal_id).update({'status': 'approved'})
+        except Exception:
+            pass
+        return {'status': 'approved', 'demo_mode': True, 'message': 'Demo: reschedule approved (no real calendar change)'}
+
     from db.firestore_client import get_db
     doc = get_db().collection('conflict_proposals').document(proposal_id).get()
     if not doc.exists:
@@ -441,9 +555,7 @@ def approve_conflict(proposal_id: str, request: Request):
         raise HTTPException(status_code=400, detail='Missing slot or event_id')
     try:
         from datetime import datetime, timedelta
-        service = _calendar_service(uid) if uid else None
-        if not service:
-            raise ValueError('Not authenticated')
+        service = _calendar_service(uid)
         start_dt = datetime.fromisoformat(proposed_slot)
         end_dt   = start_dt + timedelta(hours=1)
         service.events().patch(
@@ -470,7 +582,10 @@ def get_debt():
 
 
 @app.post('/api/debt/escalate')
-def escalate_debt():
+def escalate_debt(request: Request):
+    uid = _get_user_id(request)
+    if _is_demo_user(uid):
+        return {'message': 'Demo mode: escalation emails not sent', 'demo_mode': True, 'escalated': 0}
     try:
         from agents.debt_agent import run as debt_run
         return debt_run('manual_trigger')
@@ -490,7 +605,22 @@ def mark_done(item_id: str):
 
 # ── D3: Agenda ────────────────────────────────────────────────────────────────
 @app.post('/api/agenda/finalize/{meeting_id}')
-def finalize_agenda(meeting_id: str):
+def finalize_agenda(meeting_id: str, request: Request):
+    uid = _get_user_id(request)
+    if _is_demo_user(uid):
+        return {
+            'final_agenda': (
+                '09:00 - 09:10  Login bug status update\n'
+                '09:10 - 09:25  Q3 board report review\n'
+                '09:25 - 09:35  API documentation updates\n'
+                '09:35 - 09:50  Dashboard performance fix\n'
+                '09:50 - 09:55  Decisions & next steps\n\n'
+                'Goal: Align on blockers and confirm ownership before Friday board meeting.'
+            ),
+            'calendar_patched': False,
+            'replies_found': 0,
+            'demo_mode': True,
+        }
     try:
         from agents.agenda_agent import finalize
         return finalize(meeting_id)

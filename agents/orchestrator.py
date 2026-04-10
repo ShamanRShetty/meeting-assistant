@@ -128,6 +128,8 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     notes_data = notes_agent.run(meeting_id, transcript)
 
     # Step 2: Task agent
+    # notes_agent already strips completed items from action_items,
+    # so action_items_raw contains ONLY open/pending items.
     action_items_raw = notes_data.get('action_items', [])
     if not isinstance(action_items_raw, list):
         action_items_raw = []
@@ -135,7 +137,8 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     task_data = task_agent.run(
         meeting_id,
         action_items_raw,
-        attendees
+        attendees,
+        notes_data=notes_data,  # FIX: pass so task_agent reads emails_confirmed_sent
     )
 
     update_session(meeting_id, {
@@ -145,7 +148,9 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     })
     append_log(meeting_id, 'orchestrator', 'Post-meeting processing complete')
 
-    # D2: Meeting debt tracker — FIX: pass user_id so only this user's items are returned
+    # D2: Meeting debt tracker
+    # FIX: scope by BOTH user_id AND meeting_id so debt shows only THIS meeting's
+    # open items — not the cumulative total across all past meetings for this user.
     debt_result = None
     try:
         debt_result = debt_agent.run(meeting_id, user_id=user_id)
@@ -160,6 +165,22 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
         update_session(meeting_id, {'roi_result': roi_result})
     except Exception as ex:
         append_log(meeting_id, 'orchestrator', f'ROI agent skipped: {ex}')
+
+    # FIX: debt open count = items from THIS meeting only (not all past meetings)
+    # Override debt_result.open to reflect only current meeting's open items
+    if debt_result and isinstance(debt_result, dict):
+        current_open = len(action_items_raw)  # already deduped & open-only from notes_agent
+        debt_result['open'] = current_open
+        # recalculate overdue from the current open items only
+        from datetime import date
+        today_str = date.today().isoformat()
+        current_overdue = [
+            i for i in action_items_raw
+            if i.get('due_date', 'TBD') != 'TBD' and i.get('due_date', '') < today_str
+        ]
+        debt_result['overdue'] = len(current_overdue)
+        debt_result['overdue_items'] = current_overdue
+        debt_result['open_items'] = action_items_raw
 
     return {
         'meeting_id':    meeting_id,

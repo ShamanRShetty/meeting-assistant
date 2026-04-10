@@ -28,6 +28,10 @@ COPY agents/ ./agents/
 COPY tools/  ./tools/
 COPY db/     ./db/
 COPY api/    ./api/
+
+# FIX: demo_data.py lives at the project root and is imported by api/main.py
+# It was missing from the Docker image, causing "No module named 'demo_data'"
+COPY demo_data.py ./demo_data.py
  
 # Copy React build from Stage 1 into frontend/build/
 # FastAPI looks for this at ../frontend/build relative to api/main.py

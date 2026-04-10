@@ -1,10 +1,10 @@
 """
 D2 — Meeting Debt Tracker
- 
-Reads all open action items from Firestore, identifies overdue ones,
-sends escalation emails to owners via Gmail MCP, and returns a
-debt summary for the dashboard.
- 
+
+Reads open action items from Firestore scoped to the given user,
+identifies overdue ones, sends escalation emails to owners via Gmail MCP,
+and returns a debt summary for the dashboard.
+
 Called by: Cloud Scheduler nightly job OR manually via /api/debt/escalate
 """
 import vertexai
@@ -13,22 +13,26 @@ from db.firestore_client import get_debt_summary, append_log, get_db
 from tools.gmail_mcp import send_email
 from datetime import datetime, timezone
 import os
- 
+
 vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION'))
 model = GenerativeModel('gemini-2.5-flash')
- 
-def run(meeting_id: str = 'system') -> dict:
+
+def run(meeting_id: str = 'system', user_id: str = None) -> dict:
     """
-    1. Pull all open action items
+    1. Pull open action items scoped to user_id
     2. Identify overdue items
     3. Send escalation emails to owners of overdue items
     4. Return full debt summary
+
+    FIX: user_id is now required to scope results — without it only
+    items explicitly tagged to this user are returned, never global ones.
     """
     append_log(meeting_id, 'debt_agent', 'Running meeting debt check...')
- 
-    summary = get_debt_summary()
+
+    # FIX: always pass user_id so results are scoped to this user only
+    summary = get_debt_summary(user_id=user_id)
     overdue = summary.get('overdue_items', [])
- 
+
     emails_sent = 0
     for item in overdue:
         owner_email = item.get('owner_email')
@@ -54,10 +58,10 @@ def run(meeting_id: str = 'system') -> dict:
             emails_sent += 1
         except Exception as ex:
             append_log(meeting_id, 'debt_agent', f'Email failed for {owner_email}: {ex}')
- 
+
     append_log(meeting_id, 'debt_agent',
                f'Debt check done. Open: {summary["open"]}, Overdue: {summary["overdue"]}, Escalated: {emails_sent}')
- 
+
     return {
         'open': summary['open'],
         'overdue': summary['overdue'],

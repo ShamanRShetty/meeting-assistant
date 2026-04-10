@@ -7,7 +7,7 @@ import uvicorn, os, uuid, json
 
 load_dotenv()
 
-app = FastAPI(title='Meeting Assistant', version='3.1.0')
+app = FastAPI(title='Meeting Assistant', version='3.2.0')
 
 # ── OAuth config ──────────────────────────────────────────────────────────────
 SCOPES = [
@@ -19,10 +19,14 @@ SCOPES = [
     'https://www.googleapis.com/auth/userinfo.email',
 ]
 
-CLIENT_ID     = os.getenv('GOOGLE_CLIENT_ID', '')
-CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET', '')
+# FIX: Match env var names used in cloudbuild.yaml
+# cloudbuild sets: GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, OAUTH_REDIRECT_URI
+# Fall back to the older names for local dev compatibility
+CLIENT_ID     = (os.getenv('GOOGLE_OAUTH_CLIENT_ID') or os.getenv('GOOGLE_CLIENT_ID', ''))
+CLIENT_SECRET = (os.getenv('GOOGLE_OAUTH_CLIENT_SECRET') or os.getenv('GOOGLE_CLIENT_SECRET', ''))
 APP_URL       = os.getenv('APP_URL', 'http://localhost:8080')
-REDIRECT_URI  = f'{APP_URL}/api/auth/callback'
+# Use OAUTH_REDIRECT_URI directly if set (as cloudbuild does), else derive from APP_URL
+REDIRECT_URI  = os.getenv('OAUTH_REDIRECT_URI') or f'{APP_URL}/api/auth/callback'
 
 # ── Demo mode constants ───────────────────────────────────────────────────────
 DEMO_USER_ID    = "demo_user"
@@ -88,7 +92,7 @@ def _new_id() -> str:
 # ── Health ────────────────────────────────────────────────────────────────────
 @app.get('/api/health')
 def health():
-    return {'status': 'ok', 'version': '3.1.0'}
+    return {'status': 'ok', 'version': '3.2.0'}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -206,6 +210,8 @@ def get_upcoming_events(request: Request):
     uid = _get_user_id(request)
 
     # ── DEMO MODE ────────────────────────────────────────────────────────────
+    # FIX: Always return demo events for unauthenticated/demo users without
+    # touching Firestore or any other service that could 500.
     if _is_demo_user(uid):
         from demo_data import get_demo_events
         return get_demo_events()
@@ -259,6 +265,7 @@ def get_upcoming_events(request: Request):
         from demo_data import get_demo_events
         return get_demo_events()
     except Exception as e:
+        # FIX: Return demo events instead of 500 on any calendar error
         from demo_data import get_demo_events
         return get_demo_events()
 
@@ -327,6 +334,10 @@ async def prepare(req: PrepareRequest, request: Request):
     uid = _get_user_id(request)
     is_demo = _is_demo_user(uid) or req.demo_mode
 
+    # FIX: Use a stable per-device user_id for demo users derived from cookie,
+    # so demo sessions are isolated per browser session.
+    effective_user_id = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
+
     try:
         from db.firestore_client import create_session, update_session
 
@@ -335,7 +346,7 @@ async def prepare(req: PrepareRequest, request: Request):
             create_session(meeting_id, {
                 'event_id': None,
                 'source': 'manual',
-                'user_id': uid or DEMO_USER_ID,
+                'user_id': effective_user_id,
                 'demo_mode': is_demo,
             })
             return {
@@ -358,7 +369,7 @@ async def prepare(req: PrepareRequest, request: Request):
             create_session(meeting_id, {
                 'event_id': req.event_id,
                 'source': 'demo',
-                'user_id': DEMO_USER_ID,
+                'user_id': effective_user_id,
                 'demo_mode': True,
                 'meeting_data': cal_data,
                 'status': 'researching',
@@ -425,6 +436,9 @@ async def process(req: ProcessRequest, request: Request):
     uid = _get_user_id(request)
     is_demo = _is_demo_user(uid) or req.demo_mode
 
+    # FIX: Consistent effective user id — demo users get an isolated id
+    effective_user_id = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
+
     try:
         from agents.orchestrator import process_meeting
         from db.firestore_client import create_session, get_session
@@ -434,15 +448,11 @@ async def process(req: ProcessRequest, request: Request):
             create_session(meeting_id, {
                 'event_id': None,
                 'source': 'demo' if is_demo else 'transcript_only',
-                'user_id': uid or DEMO_USER_ID,
+                'user_id': effective_user_id,
                 'demo_mode': is_demo,
             })
 
-        # Both demo and authenticated users go through the same orchestrator.
-        # The orchestrator uses Vertex AI (Gemini) which doesn't need OAuth.
-        # Only the calendar/drive/gmail tools need OAuth — and post-processing
-        # doesn't call those tools.
-        _set_request_user(uid or DEMO_USER_ID)
+        _set_request_user(effective_user_id)
         result = process_meeting(meeting_id, req.transcript)
         _clear_request_user()
         result['demo_mode'] = is_demo
@@ -492,41 +502,50 @@ def get_session_status(meeting_id: str):
     return session
 
 
-# ── Action items ──────────────────────────────────────────────────────────────
+# ── Action items — FIX: filter by meeting_id OR user_id to prevent cross-device leakage ──
 @app.get('/api/action-items')
-def list_action_items(meeting_id: str = None):
+def list_action_items(request: Request, meeting_id: str = None):
+    uid = _get_user_id(request)
+    effective_user_id = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
+
     from db.firestore_client import get_db
     try:
-        q = get_db().collection('action_items').where('status', '==', 'open')
+        # FIX: Always scope by user_id so different devices/users don't see each other's items
+        q = get_db().collection('action_items').where('user_id', '==', effective_user_id).where('status', '==', 'open')
         if meeting_id:
             q = q.where('meeting_id', '==', meeting_id)
         docs = list(q.stream())
         return [d.to_dict() | {'id': d.id} for d in docs]
     except Exception as e:
-        if 'index' in str(e).lower() or 'failed-precondition' in str(e).lower():
-            try:
-                all_docs = list(get_db().collection('action_items').stream())
-                items = [d.to_dict() | {'id': d.id} for d in all_docs]
-                items = [i for i in items if i.get('status') == 'open']
-                if meeting_id:
-                    items = [i for i in items if i.get('meeting_id') == meeting_id]
-                return items
-            except Exception as e2:
-                raise HTTPException(status_code=500, detail=str(e2))
-        raise HTTPException(status_code=500, detail=str(e))
+        # Fallback without compound index
+        try:
+            all_docs = list(get_db().collection('action_items').stream())
+            items = [d.to_dict() | {'id': d.id} for d in all_docs]
+            # FIX: Filter by user_id
+            items = [i for i in items if i.get('user_id') == effective_user_id and i.get('status') == 'open']
+            if meeting_id:
+                items = [i for i in items if i.get('meeting_id') == meeting_id]
+            return items
+        except Exception as e2:
+            raise HTTPException(status_code=500, detail=str(e2))
 
 
 # ── D1: Conflicts ─────────────────────────────────────────────────────────────
 @app.get('/api/conflicts')
-def list_conflicts():
+def list_conflicts(request: Request):
+    uid = _get_user_id(request)
+    effective_user_id = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
+
     try:
         from db.firestore_client import get_db
-        docs = (
-            get_db().collection('conflict_proposals')
-            .where('status', '==', 'pending_approval')
-            .stream()
-        )
-        return [d.to_dict() | {'id': d.id} for d in docs]
+        # FIX: Filter conflict proposals by user_id
+        docs = list(get_db().collection('conflict_proposals').stream())
+        result = []
+        for d in docs:
+            data = d.to_dict() | {'id': d.id}
+            if data.get('status') == 'pending_approval' and data.get('user_id') == effective_user_id:
+                result.append(data)
+        return result
     except Exception:
         return []
 
@@ -571,12 +590,14 @@ def approve_conflict(proposal_id: str, request: Request):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── D2: Debt ──────────────────────────────────────────────────────────────────
+# ── D2: Debt — FIX: scoped by user_id ────────────────────────────────────────
 @app.get('/api/debt')
-def get_debt():
+def get_debt(request: Request):
+    uid = _get_user_id(request)
+    effective_user_id = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
     try:
         from db.firestore_client import get_debt_summary
-        return get_debt_summary()
+        return get_debt_summary(user_id=effective_user_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

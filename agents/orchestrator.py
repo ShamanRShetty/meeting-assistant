@@ -25,7 +25,6 @@ def prepare_meeting(event_id: str) -> dict:
 
     # Step 1: Calendar agent
     cal_data = calendar_agent.run(meeting_id, event_id)
-    # Store event_id back into cal_data so agenda_agent can use it
     cal_data['event_id'] = event_id
     update_session(meeting_id, {'meeting_data': cal_data, 'status': 'researching'})
 
@@ -69,7 +68,7 @@ Keep it under 400 words. Plain markdown only."""
     })
     append_log(meeting_id, 'orchestrator', 'Pre-meeting brief ready')
 
-    # D1: Conflict detection — non-blocking, never crashes the brief
+    # D1: Conflict detection — non-blocking
     conflict_result = {'conflicts_found': 0, 'proposals': []}
     try:
         conflict_result = conflict_agent.run(meeting_id)
@@ -106,25 +105,29 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     Post-meeting workflow:
     1. Notes agent processes transcript → summary, decisions, action_items
     2. Task agent saves action items & sends email notifications
-    3. D2 debt tracker — surfaces overdue items
+    3. D2 debt tracker — surfaces overdue items (scoped to this user)
     4. D4 ROI scorer — calculates meeting value
-
-    Returns a flat dict that the frontend reads directly.
-    All keys are always present (never missing/KeyError).
     """
     append_log(meeting_id, 'orchestrator', 'Starting post-meeting workflow')
     update_session(meeting_id, {'status': 'processing_transcript'})
 
-    # Get stored session data (attendees, calendar info)
+    # Get stored session data (attendees, calendar info, user_id)
     session = get_session(meeting_id) or {}
     cal_data_stored = session.get('meeting_data', {})
     attendees = cal_data_stored.get('attendees', [])
 
-    # Step 1: Notes agent — processes transcript
+    # FIX: Read user_id from session so debt_agent is scoped correctly.
+    # The session user_id was written by api/main.py when create_session was called.
+    user_id = (
+        session.get('user_id')
+        or session.get('meeting_data', {}).get('user_id')
+        or None
+    )
+
+    # Step 1: Notes agent
     notes_data = notes_agent.run(meeting_id, transcript)
 
-    # Step 2: Task agent — saves items + sends emails
-    # Guard: ensure action_items is always a list
+    # Step 2: Task agent
     action_items_raw = notes_data.get('action_items', [])
     if not isinstance(action_items_raw, list):
         action_items_raw = []
@@ -135,7 +138,6 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
         attendees
     )
 
-    # Persist core results immediately
     update_session(meeting_id, {
         'notes': notes_data,
         'task_summary': task_data,
@@ -143,17 +145,15 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     })
     append_log(meeting_id, 'orchestrator', 'Post-meeting processing complete')
 
-    # D2: Meeting debt tracker — run after every meeting
-    # Returns None on failure so frontend can null-check
+    # D2: Meeting debt tracker — FIX: pass user_id so only this user's items are returned
     debt_result = None
     try:
-        debt_result = debt_agent.run(meeting_id)
+        debt_result = debt_agent.run(meeting_id, user_id=user_id)
         update_session(meeting_id, {'debt_result': debt_result})
     except Exception as ex:
         append_log(meeting_id, 'orchestrator', f'Debt agent skipped: {ex}')
 
-    # D4: ROI scorer — needs both cal_data and notes_data
-    # Returns None on failure so frontend can null-check
+    # D4: ROI scorer
     roi_result = None
     try:
         roi_result = roi_agent.run(meeting_id, cal_data_stored, notes_data)
@@ -161,9 +161,6 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     except Exception as ex:
         append_log(meeting_id, 'orchestrator', f'ROI agent skipped: {ex}')
 
-    # ── Build response — ALL keys always present ──────────────────────────
-    # Frontend reads: summary, decisions, action_items, tasks_created,
-    # emails_sent, debt_result, roi_result
     return {
         'meeting_id':    meeting_id,
         'summary':       notes_data.get('summary') or '',
@@ -173,6 +170,6 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
         'action_items':  task_data.get('items') or [],
         'tasks_created': task_data.get('tasks_created') or 0,
         'emails_sent':   task_data.get('emails_sent') or 0,
-        'debt_result':   debt_result,   # None if agent failed
-        'roi_result':    roi_result,    # None if agent failed
+        'debt_result':   debt_result,
+        'roi_result':    roi_result,
     }

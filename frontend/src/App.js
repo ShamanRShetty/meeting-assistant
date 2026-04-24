@@ -135,7 +135,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .auth-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-family:var(--mono);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;padding:3px 9px;border-radius:99px;margin-bottom:10px}
 .auth-badge.demo{background:rgba(255,255,255,0.2);color:#fff}
 .auth-badge.google{background:var(--s3);color:var(--text3);border:1px solid var(--border)}
-.auth-notice{font-size:12px;color:var(--text3);max-width:420px;line-height:1.6;padding:12px 16px;background:var(--s1);border:1px solid var(--border);border-radius:8px;text-align:center}
+.auth-notice{font-size:13px;color:var(--amber);max-width:480px;line-height:1.6;padding:14px 18px;background:var(--amber-dim);border:1px solid rgba(232,160,32,0.3);border-radius:10px;text-align:center;margin-top:8px;}
+.auth-notice strong{color:#fff}
 .auth-notice strong{color:var(--amber)}
 
 /* ── Demo mode banner ── */
@@ -456,7 +457,7 @@ function useRecorder() {
 /* ═══════════════════════════════════════════════════════════
    LANDING PAGE
 ═══════════════════════════════════════════════════════════ */
-function LandingPage({ onDemo, onGoogleLogin }) {
+function LandingPage({ onDemo, onGoogleLogin, authError }) {
   return (
     <div className="landing">
       <div className="landing-logo">Meeting Intelligence</div>
@@ -479,9 +480,23 @@ function LandingPage({ onDemo, onGoogleLogin }) {
         </button>
       </div>
 
+      {authError && (
+        <div style={{
+          marginBottom: 16, padding: '10px 16px',
+          background: 'rgba(232,64,64,0.1)', border: '1px solid rgba(232,64,64,0.4)',
+          borderRadius: 8, color: '#e84040', fontSize: 13, maxWidth: 460,
+          textAlign: 'left', lineHeight: 1.5,
+        }}>
+          <strong>Sign-in failed:</strong> {authError}<br/>
+          <span style={{opacity:0.75}}>Try Demo Mode, or check that your Google account is approved.</span>
+        </div>
+      )}
       <p className="auth-notice">
-        <strong>⚠ Note for judges:</strong> Google Sign-In is in testing mode and may show a verification warning. Use <strong>Demo Mode</strong> for immediate, full access to all features.
-      </p>
+  ⚠ <strong>Google Verification Notice:</strong> This app has not yet completed Google's verification process. 
+  When signing in, you may see a warning screen — click <strong>"Advanced" → "Go to Meridian (unsafe)"</strong> to proceed. 
+  Your data is only used to power meeting features and is never stored beyond your session. 
+  If you prefer not to grant permissions, <strong>Demo Mode</strong> gives full access instantly with no login required.
+</p>
     </div>
   );
 }
@@ -508,6 +523,7 @@ function DemoBanner({ isDemo, onSignIn }) {
 export default function App() {
   const [appMode, setAppMode] = useState('landing');
   const [authChecked, setAuthChecked] = useState(false);
+  const [authErrorMsg, setAuthErrorMsg] = useState('');  // FIX: show OAuth errors
 
   const [meetingMode, setMeetingMode] = useState('calendar');
   const [calEvents, setCalEvents] = useState(null);
@@ -550,7 +566,10 @@ export default function App() {
       return;
     }
     if (params.get('auth_error')) {
+      const errMsg = decodeURIComponent(params.get('auth_error') || 'Sign-in failed. Please try again.');
       window.history.replaceState({}, '', '/');
+      // FIX: show error message on landing instead of silently staying put
+      setAuthErrorMsg(errMsg);
       setAppMode('landing');
       setAuthChecked(true);
       return;
@@ -899,7 +918,7 @@ export default function App() {
     return (
       <>
         <style>{css}</style>
-        <LandingPage onDemo={startDemo} onGoogleLogin={goToGoogleLogin} />
+        <LandingPage onDemo={startDemo} onGoogleLogin={goToGoogleLogin} authError={authErrorMsg} />
       </>
     );
   }

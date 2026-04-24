@@ -70,26 +70,24 @@ def get_user_credentials(user_id: str) -> Credentials:
         token=data.get('token'),
         refresh_token=data.get('refresh_token'),
         token_uri=data.get('token_uri', 'https://oauth2.googleapis.com/token'),
-        client_id=data.get('client_id') or os.getenv('GOOGLE_CLIENT_ID'),
-        client_secret=data.get('client_secret') or os.getenv('GOOGLE_CLIENT_SECRET'),
+        client_id=data.get('client_id') or os.getenv('GOOGLE_OAUTH_CLIENT_ID') or os.getenv('GOOGLE_CLIENT_ID'),
+        client_secret=data.get('client_secret') or os.getenv('GOOGLE_OAUTH_CLIENT_SECRET') or os.getenv('GOOGLE_CLIENT_SECRET'),
         scopes=data.get('scopes'),
     )
 
     # Auto-refresh if expired
     if creds.expired and creds.refresh_token:
         creds.refresh(Request())
-        # Persist refreshed token
         save_user_credentials(user_id, creds)
 
     return creds
 
 
-def save_user_credentials(user_id: str, creds: Credentials):
-    """Persist OAuth2 credentials for a user in Firestore."""
+def save_user_credentials(user_id: str, creds: Credentials, email: str = None):
     from db.firestore_client import get_db
     from datetime import datetime, timezone
 
-    get_db().collection('user_tokens').document(user_id).set({
+    data = {
         'user_id': user_id,
         'token': creds.token,
         'refresh_token': creds.refresh_token,
@@ -98,4 +96,8 @@ def save_user_credentials(user_id: str, creds: Credentials):
         'client_secret': creds.client_secret,
         'scopes': list(creds.scopes) if creds.scopes else [],
         'updated_at': datetime.now(timezone.utc).isoformat(),
-    })
+    }
+    if email:
+        data['email'] = email
+
+    get_db().collection('user_tokens').document(user_id).set(data)

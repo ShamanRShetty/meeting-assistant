@@ -4,6 +4,9 @@ from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 import uvicorn, os, uuid, json
+import secrets
+import hashlib
+import base64
 
 load_dotenv()
 
@@ -32,6 +35,13 @@ REDIRECT_URI  = os.getenv('OAUTH_REDIRECT_URI') or f'{APP_URL}/api/auth/callback
 DEMO_USER_ID    = "demo_user"
 DEMO_USER_EMAIL = "demo@meridian.app"
 
+
+def _generate_pkce():
+    code_verifier = secrets.token_urlsafe(64)
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).rstrip(b'=').decode()
+    return code_verifier, code_challenge
 
 def _is_demo_user(user_id: str | None) -> bool:
     return not user_id or user_id == DEMO_USER_ID
@@ -126,42 +136,58 @@ def auth_status(request: Request):
             'email': data.get('email'),
         }
     except Exception as e:
+        # FIX: If Firestore is slow/cold-starting, don't invalidate a valid cookie.
+        # Trust the cookie uid as authenticated so the user isn't kicked to landing.
+        # The worst case is they reach the app and a subsequent API call fails gracefully.
+        if uid:
+            return {'authenticated': True, 'demo_mode': False, 'user_id': uid, 'email': None}
         return {'authenticated': False, 'demo_mode': True, 'user_id': None, 'email': None, 'error': str(e)}
 
 
 @app.get('/api/auth/login')
 def auth_login(request: Request):
-    """Start the Google OAuth2 flow."""
     if not CLIENT_ID or not CLIENT_SECRET:
-        raise HTTPException(
-            status_code=500,
-            detail='OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars.'
-        )
+        raise HTTPException(status_code=500, detail='OAuth not configured.')
 
+    code_verifier, code_challenge = _generate_pkce()
     flow = _get_oauth_flow()
     auth_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true',
         prompt='consent',
+        code_challenge=code_challenge,
+        code_challenge_method='S256',
     )
 
+    is_https = (request.headers.get("x-forwarded-proto") == "https" or
+                APP_URL.startswith("https"))
+
+    samesite_val = 'none' if is_https else 'lax'
+    secure_val = True if is_https else False
+
     response = RedirectResponse(url=auth_url)
-    response.set_cookie('oauth_state', state, max_age=600, httponly=True, samesite='lax')
+    response.set_cookie('oauth_state', state, max_age=600, httponly=True,
+                        samesite=samesite_val, secure=secure_val)
+    response.set_cookie('pkce_verifier', code_verifier, max_age=600, httponly=True,
+                        samesite=samesite_val, secure=secure_val)
     return response
+
 
 
 @app.get('/api/auth/callback')
 def auth_callback(request: Request, code: str = None, state: str = None, error: str = None):
-    """Google redirects here after user grants permission."""
     if error:
         return RedirectResponse(url=f'/?auth_error={error}')
-
     if not code:
         raise HTTPException(status_code=400, detail='Missing authorization code')
 
     try:
+        code_verifier = request.cookies.get('pkce_verifier')
+        if not code_verifier:
+            raise ValueError("Missing code verifier cookie - possible session timeout or cookie block")
+
         flow = _get_oauth_flow()
-        flow.fetch_token(code=code)
+        flow.fetch_token(code=code, code_verifier=code_verifier)
         creds = flow.credentials
 
         from googleapiclient.discovery import build
@@ -172,24 +198,24 @@ def auth_callback(request: Request, code: str = None, state: str = None, error: 
         user_id = email.replace('@', '_at_').replace('.', '_dot_')
 
         from tools.auth import save_user_credentials
-        save_user_credentials(user_id, creds)
+        save_user_credentials(user_id, creds, email=email)
 
-        from db.firestore_client import get_db
-        get_db().collection('user_tokens').document(user_id).update({'email': email})
+        is_https = (request.headers.get("x-forwarded-proto") == "https" or
+                    APP_URL.startswith("https"))
+        samesite_val = 'none' if is_https else 'lax'
+        secure_val = True if is_https else False
 
         response = RedirectResponse(url='/?auth=success')
-        response.set_cookie(
-            'meridian_user_id',
-            user_id,
-            max_age=60 * 60 * 24 * 30,
-            httponly=True,
-            samesite='lax',
-        )
-        response.delete_cookie('oauth_state')
+        response.set_cookie('meridian_user_id', user_id,
+                            max_age=60 * 60 * 24 * 30, httponly=True,
+                            samesite=samesite_val, secure=secure_val)
+        response.delete_cookie('oauth_state', samesite=samesite_val, secure=secure_val)
+        response.delete_cookie('pkce_verifier', samesite=samesite_val, secure=secure_val)
         return response
 
     except Exception as e:
-        return RedirectResponse(url=f'/?auth_error={str(e)[:100]}')
+        err_msg = str(e)[:200].replace('&', ' ').replace('#', ' ')
+        return RedirectResponse(url=f'/?auth_error={err_msg}')
 
 
 @app.get('/api/auth/logout')

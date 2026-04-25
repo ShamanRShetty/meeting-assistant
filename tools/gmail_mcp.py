@@ -4,7 +4,11 @@ from email.mime.text import MIMEText
 import base64, pickle, os
  
 def _get_service():
-    return build('gmail', 'v1', credentials=get_credentials())
+    from api.main import get_request_user
+    from tools.auth import get_user_credentials, get_credentials
+    uid = get_request_user()
+    creds = get_user_credentials(uid) if uid else get_credentials()
+    return build('gmail', 'v1', credentials=creds)
  
 def send_email(to: str, subject: str, body: str) -> dict:
     service = _get_service()

@@ -524,7 +524,8 @@ export default function App() {
   const [appMode, setAppMode] = useState('landing');
   const [authChecked, setAuthChecked] = useState(false);
   const [authErrorMsg, setAuthErrorMsg] = useState('');  // FIX: show OAuth errors
-
+  const [sessionRestored, setSessionRestored] = useState(false);
+  const [restoringSession, setRestoringSession] = useState(false);
   const [meetingMode, setMeetingMode] = useState('calendar');
   const [calEvents, setCalEvents] = useState(null);
   const [calLoading, setCalLoading] = useState(false);  // FIX: separate calendar loading state
@@ -558,33 +559,39 @@ export default function App() {
 
   // ── Check auth on mount ────────────────────────────────────────────────
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('auth') === 'success') {
-      window.history.replaceState({}, '', '/');
-      setAppMode('auth');
-      setAuthChecked(true);
-      return;
-    }
-    if (params.get('auth_error')) {
-      const errMsg = decodeURIComponent(params.get('auth_error') || 'Sign-in failed. Please try again.');
-      window.history.replaceState({}, '', '/');
-      // FIX: show error message on landing instead of silently staying put
-      setAuthErrorMsg(errMsg);
-      setAppMode('landing');
-      setAuthChecked(true);
-      return;
-    }
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('auth') === 'success') {
+    window.history.replaceState({}, '', '/');
+    setAppMode('auth');
+    setAuthChecked(true);
+    restoreLastSession();
+    return;
+  }
+  if (params.get('auth_error')) {
+    const errMsg = decodeURIComponent(params.get('auth_error') || 'Sign-in failed. Please try again.');
+    window.history.replaceState({}, '', '/');
+    setAuthErrorMsg(errMsg);
+    setAppMode('landing');
+    setAuthChecked(true);
+    return;
+  }
 
-    axios.get(`${API}/auth/status`)
-      .then(r => {
-        setAppMode(r.data.authenticated ? 'auth' : 'landing');
+  axios.get(`${API}/auth/status`)
+    .then(r => {
+      if (r.data.authenticated) {
+        setAppMode('auth');
         setAuthChecked(true);
-      })
-      .catch(() => {
+        restoreLastSession();
+      } else {
         setAppMode('landing');
         setAuthChecked(true);
-      });
-  }, []);
+      }
+    })
+    .catch(() => {
+      setAppMode('landing');
+      setAuthChecked(true);
+    });
+}, []);
 
   // ── Load calendar events when mode is set ─────────────────────────────
   useEffect(() => {
@@ -627,6 +634,85 @@ export default function App() {
     }
   }
 
+  async function restoreLastSession() {
+  setRestoringSession(true);
+  try {
+    const r = await axios.get(`${API}/sessions/latest`);
+    const session = r.data;
+    if (!session || !session.meeting_id) return;
+
+    const sid = session.meeting_id;
+    setSessionId(sid);
+
+    if (session.brief) setBrief(session.brief);
+
+    // Restore post-meeting results if a transcript was processed
+    const notes = session.notes;
+    const taskSummary = session.task_summary;
+    const roiResult = session.roi_result;
+    const debtResult = session.debt_result;
+
+    if (notes && notes.summary) {
+      setPostResult({
+        meeting_id: sid,
+        summary: notes.summary || '',
+        decisions: notes.decisions || [],
+        topics: notes.topics_discussed || [],
+        sentiment: notes.sentiment || 'neutral',
+        action_items: taskSummary?.items || [],
+        tasks_created: taskSummary?.tasks_created || 0,
+        emails_sent: taskSummary?.emails_sent || 0,
+        roi_result: roiResult || null,
+        debt_result: debtResult || null,
+        demo_mode: session.demo_mode || false,
+      });
+      setLogs(session.agent_logs || []);
+      setSessionRestored(true);
+
+      // Auto-load the tool panel data
+      await Promise.allSettled([
+        loadDebtForSession(sid),
+        loadItemsForSession(sid),
+        loadConflictsForSession(),
+      ]);
+    }
+  } catch (e) {
+    // Non-fatal — user just starts fresh
+  } finally {
+    setRestoringSession(false);
+  }
+}
+
+async function loadDebtForSession(sid) {
+  try {
+    const r = await axios.get(`${API}/debt`);
+    setDebtData(r.data);
+  } catch (e) {
+    setDebtError('Failed to load: ' + (e.response?.data?.detail || e.message));
+  }
+}
+
+async function loadItemsForSession(sid) {
+  try {
+    const r = await axios.get(`${API}/action-items?meeting_id=${sid}`);
+    setActionItems(Array.isArray(r.data) ? r.data : []);
+    setAiLoaded(true);
+  } catch (e) {
+    setAiError('Failed: ' + (e.response?.data?.detail || e.message));
+    setAiLoaded(true);
+  }
+}
+
+async function loadConflictsForSession() {
+  try {
+    const r = await axios.get(`${API}/conflicts`);
+    setConflicts(Array.isArray(r.data) ? r.data : []);
+    setConflictsLoaded(true);
+  } catch {
+    setConflictsLoaded(true);
+  }
+}
+
   const effectiveTranscript = transcribed || transcript;
   const canProcess = effectiveTranscript.trim().length > 20;
 
@@ -639,22 +725,24 @@ export default function App() {
   }
 
   function resetAllState() {
-    setBrief('');
-    setPostResult(null);
-    setSessionId('');
-    setLogs([]);
-    setTranscript('');
-    setTranscribed('');
-    setDebtData(null);
-    setDebtError('');
-    setConflicts([]);
-    setConflictsLoaded(false);
-    setAgendaStatus('');
-    setActionItems([]);
-    setAiLoaded(false);
-    setAiError('');
-    setApiError('');
-  }
+  setBrief('');
+  setPostResult(null);
+  setSessionId('');
+  setLogs([]);
+  setTranscript('');
+  setTranscribed('');
+  setDebtData(null);
+  setDebtError('');
+  setConflicts([]);
+  setConflictsLoaded(false);
+  setAgendaStatus('');
+  setActionItems([]);
+  setAiLoaded(false);
+  setAiError('');
+  setApiError('');
+  setSessionRestored(false);   // add this
+  setRestoringSession(false);  // add this
+}
 
   function goToGoogleLogin() { window.location.href = `${API}/auth/login`; }
 
@@ -930,7 +1018,28 @@ export default function App() {
       <div className="app">
 
         <DemoBanner isDemo={isDemo} onSignIn={goToGoogleLogin} />
+        {restoringSession && (
+  <div className="loading-bar" style={{ marginBottom: 16 }}>
+    <div className="spinner" /> Restoring your last session…
+  </div>
+)}
 
+{sessionRestored && !restoringSession && (
+  <div style={{
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '10px 18px', marginBottom: 16,
+    background: 'var(--green-dim)',
+    border: '1px solid rgba(39,201,110,0.25)',
+    borderRadius: 9, fontSize: 14, color: 'var(--green)',
+  }}>
+    <Icon.CheckCircle />
+    Last session restored — your results, action items, and debt summary are loaded below.
+    <button
+      onClick={() => setSessionRestored(false)}
+      style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 18 }}
+    >×</button>
+  </div>
+)}
         <header className="header">
           <div className="header-eyebrow" style={{ justifyContent: 'space-between' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

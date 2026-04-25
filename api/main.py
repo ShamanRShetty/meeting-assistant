@@ -505,17 +505,11 @@ def get_demo_events_endpoint():
 
 
 # ── Per-request user context ──────────────────────────────────────────────────
-import threading
-_user_ctx = threading.local()
-
-def _set_request_user(user_id: str | None):
-    _user_ctx.user_id = user_id
-
-def _clear_request_user():
-    _user_ctx.user_id = None
-
-def get_request_user() -> str | None:
-    return getattr(_user_ctx, 'user_id', None)
+from contextvars import ContextVar
+_request_user: ContextVar[str | None] = ContextVar('request_user', default=None)
+def _set_request_user(user_id): _request_user.set(user_id)
+def _clear_request_user(): _request_user.set(None)
+def get_request_user(): return _request_user.get()
 
 
 # ── Session ───────────────────────────────────────────────────────────────────
@@ -527,6 +521,28 @@ def get_session_status(meeting_id: str):
         raise HTTPException(status_code=404, detail='Session not found')
     return session
 
+@app.get('/api/sessions/latest')
+def get_latest_session(request: Request):
+    uid = _get_user_id(request)
+    effective_uid = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
+    try:
+        from db.firestore_client import get_db
+        docs = list(
+            get_db().collection('sessions')
+            .where('user_id', '==', effective_uid)
+            .order_by('created_at', direction='DESCENDING')
+            .limit(1)
+            .stream()
+        )
+        if not docs:
+            return {}
+        data = docs[0].to_dict()
+        # Convert any non-serializable types
+        if 'created_at' in data and hasattr(data['created_at'], 'isoformat'):
+            data['created_at'] = data['created_at'].isoformat()
+        return data
+    except Exception as e:
+        return {}
 
 # ── Action items — FIX: filter by meeting_id OR user_id to prevent cross-device leakage ──
 @app.get('/api/action-items')

@@ -46,11 +46,14 @@ def run(meeting_id: str, meeting_data: dict, notes_data: dict) -> dict:
     # Agenda completion: what fraction of agenda items appear in summary/topics
     summary_text = notes_data.get('summary', '') + ' '.join(notes_data.get('topics_discussed', []))
     agenda_covered = 0
+    agenda_pct = 0
+    summary_words = summary_text.lower().split()
     for item in agenda_items:
-        if any(word.lower() in summary_text.lower()
-               for word in item.split()[:3] if len(word) > 3):
+        words = [w.lower() for w in item.split()[:3] if len(w) > 3]
+        if any(w in summary_words for w in words):
             agenda_covered += 1
-            agenda_pct = round(100 * agenda_covered / max(len(agenda_items), 1))
+
+    agenda_pct = round(100 * agenda_covered / max(len(agenda_items), 1))
  
     # ── ROI score with Gemini ─────────────────────────────────────
     prompt = f"""

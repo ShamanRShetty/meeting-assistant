@@ -3,7 +3,11 @@ from tools.auth import get_credentials
 import pickle, os
  
 def _get_service():
-    return build('drive', 'v3', credentials=get_credentials())
+    from api.main import get_request_user
+    from tools.auth import get_user_credentials, get_credentials
+    uid = get_request_user()
+    creds = get_user_credentials(uid) if uid else get_credentials()
+    return build('drive', 'v3', credentials=creds)
  
 def search_docs(query: str, max_results: int = 5) -> list[dict]:
     """Search Drive for relevant documents."""

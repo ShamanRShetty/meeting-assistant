@@ -5,7 +5,11 @@ import pickle, os
 from datetime import datetime, timedelta, timezone
  
 def _get_service():
-    return build('calendar', 'v3', credentials=get_credentials())
+    from api.main import get_request_user
+    from tools.auth import get_user_credentials, get_credentials
+    uid = get_request_user()
+    creds = get_user_credentials(uid) if uid else get_credentials()
+    return build('calendar', 'v3', credentials=creds)
  
 def get_upcoming_events(hours_ahead: int = 2) -> list[dict]:
     """Fetch events in the next N hours."""

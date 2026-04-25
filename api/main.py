@@ -527,22 +527,39 @@ def get_latest_session(request: Request):
     effective_uid = uid if uid and not _is_demo_user(uid) else f"demo_{uid or 'anon'}"
     try:
         from db.firestore_client import get_db
+        # NO order_by — avoids requiring a composite Firestore index
+        # Sort in Python instead after fetching
         docs = list(
             get_db().collection('sessions')
             .where('user_id', '==', effective_uid)
-            .order_by('created_at', direction='DESCENDING')
-            .limit(1)
             .stream()
         )
         if not docs:
-            return {}
+            return None  # Return null, not {} — frontend checks for this
+
+        # Sort by created_at descending in Python
+        def _sort_key(doc):
+            val = doc.to_dict().get('created_at')
+            if val is None:
+                return ''
+            if hasattr(val, 'isoformat'):
+                return val.isoformat()
+            return str(val)
+
+        docs.sort(key=_sort_key, reverse=True)
         data = docs[0].to_dict()
-        # Convert any non-serializable types
-        if 'created_at' in data and hasattr(data['created_at'], 'isoformat'):
-            data['created_at'] = data['created_at'].isoformat()
+
+        # Serialize Firestore Timestamps to strings
+        for k, v in data.items():
+            if hasattr(v, 'isoformat'):
+                data[k] = v.isoformat()
+
         return data
     except Exception as e:
-        return {}
+        # Log it so you can actually see what's failing
+        import traceback
+        print(f"[sessions/latest] ERROR for {effective_uid}: {traceback.format_exc()}")
+        return None
 
 # ── Action items — FIX: filter by meeting_id OR user_id to prevent cross-device leakage ──
 @app.get('/api/action-items')

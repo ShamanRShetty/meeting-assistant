@@ -4,8 +4,6 @@ import ReactMarkdown from 'react-markdown';
 
 const API = process.env.REACT_APP_API_URL || '/api';
 
-// ── Hardcoded demo events — shown when API is unreachable or returns empty ──
-// These mirror demo_data.py exactly so judges always have events to test with.
 function buildDemoEvents() {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -67,7 +65,6 @@ Rahul: Fine by me.
 
 Alice: Great. Monday it is. Thanks everyone.`;
 
-/* ── SVG Icons ────────────────────────────────────────────────────────────── */
 const Icon = {
   Calendar: () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>),
   Zap: () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>),
@@ -92,7 +89,6 @@ const Icon = {
   LogOut: () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>),
 };
 
-/* ── Global CSS ──────────────────────────────────────────────────────────── */
 const css = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -110,8 +106,6 @@ const css = `
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.65;min-height:100vh;-webkit-font-smoothing:antialiased}
 .app{max-width:1020px;margin:0 auto;padding:52px 28px 120px}
-
-/* ── Landing / Auth screen ── */
 .landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;background:var(--bg);position:relative;overflow:hidden}
 .landing::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(79,124,255,0.07),transparent);pointer-events:none}
 .landing-logo{font-family:var(--mono);font-size:13px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);margin-bottom:32px;display:flex;align-items:center;gap:10px}
@@ -121,7 +115,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .landing-tagline{font-size:18px;color:var(--text2);margin-bottom:48px;max-width:480px;line-height:1.6}
 .landing-cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:520px;margin-bottom:24px}
 @media(max-width:520px){.landing-cards{grid-template-columns:1fr}}
-
 .auth-card{border-radius:14px;padding:26px 22px;cursor:pointer;transition:all 0.2s;text-align:left;border:none;width:100%;font-family:var(--font)}
 .auth-card.demo{background:var(--accent);color:#fff;box-shadow:0 8px 32px rgba(79,124,255,0.35)}
 .auth-card.demo:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 12px 40px rgba(79,124,255,0.45)}
@@ -136,18 +129,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .auth-badge.demo{background:rgba(255,255,255,0.2);color:#fff}
 .auth-badge.google{background:var(--s3);color:var(--text3);border:1px solid var(--border)}
 .auth-notice{font-size:13px;color:var(--amber);max-width:480px;line-height:1.6;padding:14px 18px;background:var(--amber-dim);border:1px solid rgba(232,160,32,0.3);border-radius:10px;text-align:center;margin-top:8px;}
-.auth-notice strong{color:#fff}
 .auth-notice strong{color:var(--amber)}
-
-/* ── Demo mode banner ── */
 .demo-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 18px;background:linear-gradient(90deg,rgba(79,124,255,0.12),rgba(79,124,255,0.06));border:1px solid rgba(79,124,255,0.25);border-radius:9px;margin-bottom:28px;flex-wrap:wrap}
 .demo-banner-left{display:flex;align-items:center;gap:10px}
 .demo-badge{font-family:var(--mono);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#fff;background:var(--accent);padding:3px 10px;border-radius:99px}
 .demo-banner-text{font-size:13px;color:var(--text2)}
 .demo-banner-link{font-size:12px;color:var(--accent);text-decoration:none;white-space:nowrap;display:flex;align-items:center;gap:5px;cursor:pointer;background:none;border:none;font-family:var(--font)}
 .demo-banner-link:hover{text-decoration:underline}
-
-/* ── Header ── */
 .header{margin-bottom:48px}
 .header-eyebrow{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:10px}
 .header-eyebrow::before{content:'';display:block;width:22px;height:1px;background:var(--accent)}
@@ -156,8 +144,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .header-sub{font-size:15px;color:var(--text2)}
 .section-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text3);margin-bottom:22px;display:flex;align-items:center;gap:12px}
 .section-eyebrow::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* ── Meeting mode grid ── */
 .meeting-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 .meeting-option{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:22px 20px;cursor:pointer;transition:all 0.18s}
 .meeting-option:hover{border-color:var(--border2)}
@@ -165,25 +151,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .mo-icon{margin-bottom:12px;color:var(--accent);display:block}
 .mo-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
 .mo-desc{font-size:14px;color:var(--text2);line-height:1.5}
-
-/* ── Calendar select ── */
 .cal-select-wrap{margin-top:14px}
 .cal-select{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:13px 44px 13px 16px;color:var(--text);font-family:var(--font);font-size:15px;outline:none;cursor:pointer;transition:border-color 0.18s;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238494b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
 .cal-select:focus{border-color:var(--accent)}
 .cal-select option{background:#111521;color:#dce4f2;padding:8px}
 .demo-events-note{font-size:12px;color:var(--teal);font-family:var(--mono);margin-top:6px;display:flex;align-items:center;gap:5px}
-
-/* ── Session pill ── */
 .session-pill{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--accent);background:var(--accent-glow);border:1px solid rgba(79,124,255,0.2);padding:6px 14px;border-radius:99px;margin-top:14px}
 .session-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
-
-/* ── Transcript tabs ── */
 .transcript-tabs{display:flex;gap:4px;margin-bottom:18px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:4px}
 .tab-btn{flex:1;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-family:var(--font);font-size:14px;font-weight:500;color:var(--text2);background:transparent;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{background:var(--s3);color:var(--text);border:1px solid var(--border2)}
-
-/* ── Record ── */
 .record-panel{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:36px 28px;text-align:center}
 .record-btn{width:84px;height:84px;border-radius:50%;border:2px solid var(--border2);cursor:pointer;background:var(--s3);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;transition:all 0.18s;color:var(--text2)}
 .record-btn:hover{border-color:var(--red);color:var(--red);transform:scale(1.04)}
@@ -192,8 +170,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .record-label{font-size:15px;color:var(--text2);margin-bottom:8px}
 .record-timer{font-family:var(--mono);font-size:24px;color:var(--text);letter-spacing:0.06em}
 .record-hint{font-size:13px;color:var(--text3);margin-top:10px}
-
-/* ── Upload ── */
 .upload-zone{background:var(--s1);border:2px dashed var(--border);border-radius:var(--r);padding:44px 28px;text-align:center;cursor:pointer;transition:all 0.18s;position:relative}
 .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--s2)}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -207,8 +183,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .progress-bar-wrap{height:4px;background:var(--s3);border-radius:2px;overflow:hidden}
 .progress-bar{height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s}
 .progress-status{font-family:var(--mono);font-size:12px;color:var(--text2);margin-top:10px}
-
-/* ── Textarea ── */
 .paste-panel{position:relative}
 .textarea{width:100%;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.7;resize:vertical;outline:none;transition:border-color 0.18s;min-height:170px}
 .textarea:focus{border-color:var(--accent)}
@@ -219,22 +193,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .demo-btn:hover{background:rgba(155,109,255,0.2)}
 .demo-btn.teal{color:var(--teal);background:var(--teal-dim);border-color:rgba(34,211,200,0.2)}
 .demo-btn.teal:hover{background:rgba(34,211,200,0.2)}
-
-/* ── Transcript preview ── */
 .transcript-preview{background:var(--s1);border:1px solid var(--green);border-radius:var(--r);padding:18px;margin-top:14px}
 .preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .preview-label{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:0.12em;text-transform:uppercase}
 .preview-text{font-family:var(--mono);font-size:13px;color:var(--text2);line-height:1.65;max-height:130px;overflow-y:auto}
 .preview-text::-webkit-scrollbar{width:3px}
 .preview-text::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
-
-/* ── Buttons ── */
 .primary-btn{width:100%;padding:15px 26px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:16px;font-weight:600;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:9px;margin-top:22px}
 .primary-btn:hover{background:var(--accent2);box-shadow:0 8px 28px rgba(79,124,255,0.28)}
 .primary-btn:active{transform:scale(0.99)}
 .primary-btn:disabled{background:var(--s3);color:var(--text3);cursor:not-allowed;box-shadow:none}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border:1px solid var(--border2);border-radius:8px;background:transparent;color:var(--text2);font-family:var(--font);font-size:14px;cursor:pointer;transition:all 0.18s}
 .btn:hover{color:var(--text);border-color:var(--accent);background:var(--accent-glow)}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
 .btn-danger{border-color:rgba(232,64,64,0.3);color:var(--red)}
 .btn-danger:hover{background:var(--red-dim);border-color:var(--red)}
 .btn-green{border-color:rgba(39,201,110,0.3);color:var(--green)}
@@ -245,15 +216,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .btn-copy.copied{color:var(--green);border-color:rgba(39,201,110,0.3);background:var(--green-dim)}
 .btn-pdf{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid var(--border2);border-radius:7px;background:transparent;color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;transition:all 0.18s}
 .btn-pdf:hover{color:var(--text);border-color:var(--accent);background:var(--accent-glow)}
-
-/* ── Loading / Error ── */
 .loading-bar{display:flex;align-items:center;gap:13px;padding:14px 18px;background:var(--accent-glow);border:1px solid rgba(79,124,255,0.2);border-radius:var(--r);color:var(--accent);font-size:15px;margin:18px 0}
 .spinner{width:15px;height:15px;border:2px solid rgba(79,124,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 .error-bar{display:flex;align-items:flex-start;gap:13px;padding:14px 18px;background:var(--red-dim);border:1px solid rgba(232,64,64,0.3);border-radius:var(--r);color:var(--red);font-size:14px;margin:18px 0;line-height:1.5}
-
-/* ── Agent logs ── */
 .log-box{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin:18px 0}
 .log-header{display:flex;align-items:center;gap:9px;padding:12px 18px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text3)}
 .log-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s ease-in-out infinite}
@@ -264,8 +231,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .la{color:var(--green);min-width:105px}
 .lt{color:var(--text3)}
 .lm{color:var(--text2)}
-
-/* ── Result cards ── */
 .result-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:18px}
 .result-card.green-border{border-color:rgba(39,201,110,0.25)}
 .result-card.blue-border{border-color:rgba(79,124,255,0.25)}
@@ -282,8 +247,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .rtag-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(232,64,64,0.2)}
 .rtag-teal{background:var(--teal-dim);color:var(--teal);border:1px solid rgba(34,211,200,0.2)}
 .rb{padding:22px}
-
-/* ── Stats ── */
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
 .stat{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:16px;text-align:center}
 .sn{font-family:var(--mono);font-size:28px;font-weight:500;color:#fff;letter-spacing:-0.02em}
@@ -294,8 +257,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .di{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:15px;color:var(--text2)}
 .di:last-child{border-bottom:none}
 .di::before{content:'—';color:var(--text3);flex-shrink:0;margin-top:1px}
-
-/* ── Action items ── */
 .ai-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--s2);border:1px solid var(--border);border-radius:9px;margin-bottom:9px;transition:border-color 0.15s}
 .ai-row:hover{border-color:var(--border2)}
 .ai-owner{font-family:var(--mono);font-size:13px;color:var(--accent);min-width:86px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -305,8 +266,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .ph{background:var(--red-dim);color:var(--red);border:1px solid rgba(232,64,64,0.2)}
 .pm{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(232,160,32,0.2)}
 .pl{background:var(--green-dim);color:var(--green);border:1px solid rgba(39,201,110,0.2)}
-
-/* ── Markdown ── */
 .md h1,.md h2,.md h3{font-size:15px;font-weight:600;color:var(--text);margin:16px 0 7px}
 .md p{font-size:15px;color:var(--text2);margin-bottom:10px;line-height:1.7}
 .md ul,.md ol{padding-left:20px;margin-bottom:10px}
@@ -314,8 +273,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .md strong{color:var(--text);font-weight:500}
 .md code{font-family:var(--mono);font-size:13px;background:var(--s3);padding:2px 6px;border-radius:4px;color:var(--accent)}
 .md a{color:var(--accent);text-decoration:none}
-
-/* ── Bottom ── */
 .bottom-wrap{margin-top:44px;padding-top:36px;border-top:1px solid var(--border)}
 .mini-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:22px;text-align:center}
 .mc-num{font-family:var(--mono);font-size:30px;color:#fff}
@@ -337,7 +294,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 .conflict-note{font-size:14px;color:var(--text3);margin:7px 0 11px;font-style:italic}
 .divider{height:1px;background:var(--border);margin:36px 0}
 .info-msg{font-size:14px;color:var(--text3);padding:16px;background:var(--s2);border-radius:8px;border:1px solid var(--border);text-align:center}
-
+.restore-banner{display:flex;align-items:center;gap:10px;padding:10px 18px;margin-bottom:16px;background:var(--green-dim);border:1px solid rgba(39,201,110,0.25);border-radius:9px;font-size:14px;color:var(--green)}
+.restore-banner button{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1}
 @media(max-width:640px){
   .meeting-grid{grid-template-columns:1fr}
   .stats-row{grid-template-columns:1fr 1fr}
@@ -346,7 +304,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16
 }
 `;
 
-/* ── Sub-components ─────────────────────────────────────────────────────── */
 function PriorityBadge({ priority }) {
   const p = (priority || 'medium').toLowerCase();
   return <span className={`pbadge ${p === 'high' ? 'ph' : p === 'low' ? 'pl' : 'pm'}`}>{p}</span>;
@@ -454,16 +411,12 @@ function useRecorder() {
   return { recording, seconds, audioBlob, start, stop, reset, fmt };
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LANDING PAGE
-═══════════════════════════════════════════════════════════ */
 function LandingPage({ onDemo, onGoogleLogin, authError }) {
   return (
     <div className="landing">
       <div className="landing-logo">Meeting Intelligence</div>
       <h1 className="landing-title">Meri<span>dian</span></h1>
       <p className="landing-tagline">AI-powered meeting briefs, transcription, action items, and ROI scoring — all in one place.</p>
-
       <div className="landing-cards">
         <button className="auth-card demo" onClick={onDemo}>
           <div className="auth-badge demo">✦ No Login Needed</div>
@@ -471,7 +424,6 @@ function LandingPage({ onDemo, onGoogleLogin, authError }) {
           <div className="auth-card-title">Try Demo Mode</div>
           <div className="auth-card-desc">Full access instantly. Demo calendar events, live AI processing, real Gemini output.</div>
         </button>
-
         <button className="auth-card google" onClick={onGoogleLogin}>
           <div className="auth-badge google">Google OAuth</div>
           <div className="auth-card-icon"><Icon.Google /></div>
@@ -479,29 +431,21 @@ function LandingPage({ onDemo, onGoogleLogin, authError }) {
           <div className="auth-card-desc">Connect your Calendar, Drive & Gmail for personalised meeting intelligence.</div>
         </button>
       </div>
-
       {authError && (
-        <div style={{
-          marginBottom: 16, padding: '10px 16px',
-          background: 'rgba(232,64,64,0.1)', border: '1px solid rgba(232,64,64,0.4)',
-          borderRadius: 8, color: '#e84040', fontSize: 13, maxWidth: 460,
-          textAlign: 'left', lineHeight: 1.5,
-        }}>
+        <div style={{ marginBottom: 16, padding: '10px 16px', background: 'rgba(232,64,64,0.1)', border: '1px solid rgba(232,64,64,0.4)', borderRadius: 8, color: '#e84040', fontSize: 13, maxWidth: 460, textAlign: 'left', lineHeight: 1.5 }}>
           <strong>Sign-in failed:</strong> {authError}<br/>
           <span style={{opacity:0.75}}>Try Demo Mode, or check that your Google account is approved.</span>
         </div>
       )}
       <p className="auth-notice">
-  ⚠ <strong>Google Verification Notice:</strong> This app has not yet completed Google's verification process. 
-  When signing in, you may see a warning screen — click <strong>"Advanced" → "Go to Meridian (unsafe)"</strong> to proceed. 
-  Your data is only used to power meeting features and is never stored beyond your session. 
-  If you prefer not to grant permissions, <strong>Demo Mode</strong> gives full access instantly with no login required.
-</p>
+        ⚠ <strong>Google Verification Notice:</strong> This app has not yet completed Google's verification process.
+        When signing in, you may see a warning screen — click <strong>"Advanced" → "Go to Meridian (unsafe)"</strong> to proceed.
+        If you prefer not to grant permissions, <strong>Demo Mode</strong> gives full access instantly with no login required.
+      </p>
     </div>
   );
 }
 
-/* ── Demo Banner ── */
 function DemoBanner({ isDemo, onSignIn }) {
   if (!isDemo) return null;
   return (
@@ -510,25 +454,22 @@ function DemoBanner({ isDemo, onSignIn }) {
         <span className="demo-badge">Demo Mode</span>
         <span className="demo-banner-text">Using demo data · AI processing is live (Vertex AI / Gemini)</span>
       </div>
-      <button className="demo-banner-link" onClick={onSignIn}>
-        <Icon.Google /> Sign in with Google →
-      </button>
+      <button className="demo-banner-link" onClick={onSignIn}><Icon.Google /> Sign in with Google →</button>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN APP
-═══════════════════════════════════════════════════════════ */
 export default function App() {
+  // ── State ──────────────────────────────────────────────────────────────
   const [appMode, setAppMode] = useState('landing');
   const [authChecked, setAuthChecked] = useState(false);
-  const [authErrorMsg, setAuthErrorMsg] = useState('');  // FIX: show OAuth errors
+  const [authErrorMsg, setAuthErrorMsg] = useState('');
   const [sessionRestored, setSessionRestored] = useState(false);
   const [restoringSession, setRestoringSession] = useState(false);
+
   const [meetingMode, setMeetingMode] = useState('calendar');
   const [calEvents, setCalEvents] = useState(null);
-  const [calLoading, setCalLoading] = useState(false);  // FIX: separate calendar loading state
+  const [calLoading, setCalLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [brief, setBrief] = useState('');
@@ -554,53 +495,116 @@ export default function App() {
   const recorder = useRecorder();
   const summaryCopy = useCopy();
   const briefCopy = useCopy();
-
   const isDemo = appMode === 'demo';
 
-  // ── Check auth on mount ────────────────────────────────────────────────
-  useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('auth') === 'success') {
-    window.history.replaceState({}, '', '/');
-    setAppMode('auth');
-    setAuthChecked(true);
-    restoreLastSession();
-    return;
-  }
-  if (params.get('auth_error')) {
-    const errMsg = decodeURIComponent(params.get('auth_error') || 'Sign-in failed. Please try again.');
-    window.history.replaceState({}, '', '/');
-    setAuthErrorMsg(errMsg);
-    setAppMode('landing');
-    setAuthChecked(true);
-    return;
-  }
+  // ── CRITICAL: define restoreLastSession BEFORE the useEffect that calls it ──
+  // Using useCallback so it has a stable reference and the linter is happy.
+  const restoreLastSession = useCallback(async () => {
+    setRestoringSession(true);
+    try {
+      const r = await axios.get(`${API}/sessions/latest`);
+      const session = r.data;
+      if (!session || !session.meeting_id) return;
 
-  axios.get(`${API}/auth/status`)
-    .then(r => {
-      if (r.data.authenticated) {
-        setAppMode('auth');
-        setAuthChecked(true);
-        restoreLastSession();
-      } else {
-        setAppMode('landing');
-        setAuthChecked(true);
+      const sid = session.meeting_id;
+
+      // Set sessionId first synchronously via the ref-based approach below,
+      // then set it in state too so the pill renders.
+      setSessionId(sid);
+      if (session.brief) setBrief(session.brief);
+      if (session.agent_logs) setLogs(session.agent_logs);
+
+      const notes = session.notes;
+      const taskSummary = session.task_summary;
+
+      if (notes && notes.summary) {
+        setPostResult({
+          meeting_id: sid,
+          summary: notes.summary || '',
+          decisions: notes.decisions || [],
+          topics: notes.topics_discussed || [],
+          sentiment: notes.sentiment || 'neutral',
+          action_items: taskSummary?.items || [],
+          tasks_created: taskSummary?.tasks_created || 0,
+          emails_sent: taskSummary?.emails_sent || 0,
+          roi_result: session.roi_result || null,
+          debt_result: session.debt_result || null,
+          demo_mode: session.demo_mode || false,
+        });
+        setSessionRestored(true);
       }
-    })
-    .catch(() => {
+
+      // Load tool panel data using sid directly (don't rely on sessionId state,
+      // which may not have propagated yet due to React batching).
+      const [debtRes, itemsRes, conflictsRes] = await Promise.allSettled([
+        axios.get(`${API}/debt`),
+        axios.get(`${API}/action-items?meeting_id=${sid}`),
+        axios.get(`${API}/conflicts`),
+      ]);
+
+      if (debtRes.status === 'fulfilled') {
+        setDebtData(debtRes.value.data);
+      }
+      if (itemsRes.status === 'fulfilled') {
+        setActionItems(Array.isArray(itemsRes.value.data) ? itemsRes.value.data : []);
+        setAiLoaded(true);
+      }
+      if (conflictsRes.status === 'fulfilled') {
+        setConflicts(Array.isArray(conflictsRes.value.data) ? conflictsRes.value.data : []);
+        setConflictsLoaded(true);
+      }
+    } catch (e) {
+      // Non-fatal — user starts fresh
+    } finally {
+      setRestoringSession(false);
+    }
+  }, []); // no deps needed; uses only setters and API constant
+
+  // ── Auth check on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get('auth') === 'success') {
+      window.history.replaceState({}, '', '/');
+      setAppMode('auth');
+      setAuthChecked(true);
+      restoreLastSession();
+      return;
+    }
+
+    if (params.get('auth_error')) {
+      const errMsg = decodeURIComponent(params.get('auth_error') || 'Sign-in failed. Please try again.');
+      window.history.replaceState({}, '', '/');
+      setAuthErrorMsg(errMsg);
       setAppMode('landing');
       setAuthChecked(true);
-    });
-}, []);
+      return;
+    }
 
-  // ── Load calendar events when mode is set ─────────────────────────────
+    axios.get(`${API}/auth/status`)
+      .then(r => {
+        if (r.data.authenticated) {
+          setAppMode('auth');
+          setAuthChecked(true);
+          restoreLastSession(); // ← now defined above, no stale closure
+        } else {
+          setAppMode('landing');
+          setAuthChecked(true);
+        }
+      })
+      .catch(() => {
+        setAppMode('landing');
+        setAuthChecked(true);
+      });
+  }, [restoreLastSession]);
+
+  // ── Load calendar events when app mode changes ─────────────────────────
   useEffect(() => {
     if (appMode === 'landing' || !authChecked) return;
     loadCalendarEvents(appMode);
   }, [appMode, authChecked]);
 
   async function loadCalendarEvents(mode) {
-    // mode is passed explicitly to avoid stale closure on appMode
     const demoMode = (mode || appMode) === 'demo';
     setCalLoading(true);
     setCalEvents(null);
@@ -611,7 +615,6 @@ export default function App() {
         setCalEvents(data);
         setSelectedEventId(data[0].id);
       } else {
-        // FIX: Empty array from API — use hardcoded demo events for demo mode
         if (demoMode) {
           const fallback = buildDemoEvents();
           setCalEvents(fallback);
@@ -620,8 +623,7 @@ export default function App() {
           setCalEvents([]);
         }
       }
-    } catch (err) {
-      // FIX: On any network/API error in demo mode, silently use hardcoded events.
+    } catch {
       if (demoMode) {
         const fallback = buildDemoEvents();
         setCalEvents(fallback);
@@ -634,137 +636,29 @@ export default function App() {
     }
   }
 
-  async function restoreLastSession() {
-  setRestoringSession(true);
-  try {
-    const r = await axios.get(`${API}/sessions/latest`);
-    const session = r.data;
-    if (!session || !session.meeting_id) return;
-
-    const sid = session.meeting_id;
-    setSessionId(sid);
-
-    if (session.brief) setBrief(session.brief);
-
-    // Restore post-meeting results if a transcript was processed
-    const notes = session.notes;
-    const taskSummary = session.task_summary;
-    const roiResult = session.roi_result;
-    const debtResult = session.debt_result;
-
-    if (notes && notes.summary) {
-      setPostResult({
-        meeting_id: sid,
-        summary: notes.summary || '',
-        decisions: notes.decisions || [],
-        topics: notes.topics_discussed || [],
-        sentiment: notes.sentiment || 'neutral',
-        action_items: taskSummary?.items || [],
-        tasks_created: taskSummary?.tasks_created || 0,
-        emails_sent: taskSummary?.emails_sent || 0,
-        roi_result: roiResult || null,
-        debt_result: debtResult || null,
-        demo_mode: session.demo_mode || false,
-      });
-      setLogs(session.agent_logs || []);
-      setSessionRestored(true);
-
-      // Auto-load the tool panel data
-      await Promise.allSettled([
-        loadDebtForSession(sid),
-        loadItemsForSession(sid),
-        loadConflictsForSession(),
-      ]);
-    }
-  } catch (e) {
-    // Non-fatal — user just starts fresh
-  } finally {
-    setRestoringSession(false);
-  }
-}
-
-async function loadDebtForSession(sid) {
-  try {
-    const r = await axios.get(`${API}/debt`);
-    setDebtData(r.data);
-  } catch (e) {
-    setDebtError('Failed to load: ' + (e.response?.data?.detail || e.message));
-  }
-}
-
-async function loadItemsForSession(sid) {
-  try {
-    const r = await axios.get(`${API}/action-items?meeting_id=${sid}`);
-    setActionItems(Array.isArray(r.data) ? r.data : []);
-    setAiLoaded(true);
-  } catch (e) {
-    setAiError('Failed: ' + (e.response?.data?.detail || e.message));
-    setAiLoaded(true);
-  }
-}
-
-async function loadConflictsForSession() {
-  try {
-    const r = await axios.get(`${API}/conflicts`);
-    setConflicts(Array.isArray(r.data) ? r.data : []);
-    setConflictsLoaded(true);
-  } catch {
-    setConflictsLoaded(true);
-  }
-}
-
   const effectiveTranscript = transcribed || transcript;
   const canProcess = effectiveTranscript.trim().length > 20;
 
-  // ── Auth handlers ──────────────────────────────────────────────────────
-  function startDemo() {
-    resetAllState();
-    // FIX: set appMode AFTER reset so useEffect fires with appMode==='demo' already set,
-    // ensuring loadCalendarEvents uses the demo fallback path correctly.
-    setAppMode('demo');
+  function resetAllState() {
+    setBrief(''); setPostResult(null); setSessionId(''); setLogs([]);
+    setTranscript(''); setTranscribed(''); setDebtData(null); setDebtError('');
+    setConflicts([]); setConflictsLoaded(false); setAgendaStatus('');
+    setActionItems([]); setAiLoaded(false); setAiError(''); setApiError('');
+    setSessionRestored(false); setRestoringSession(false);
   }
 
-  function resetAllState() {
-  setBrief('');
-  setPostResult(null);
-  setSessionId('');
-  setLogs([]);
-  setTranscript('');
-  setTranscribed('');
-  setDebtData(null);
-  setDebtError('');
-  setConflicts([]);
-  setConflictsLoaded(false);
-  setAgendaStatus('');
-  setActionItems([]);
-  setAiLoaded(false);
-  setAiError('');
-  setApiError('');
-  setSessionRestored(false);   // add this
-  setRestoringSession(false);  // add this
-}
-
+  function startDemo() { resetAllState(); setAppMode('demo'); }
   function goToGoogleLogin() { window.location.href = `${API}/auth/login`; }
-
   function signOut() {
     axios.get(`${API}/auth/logout`).finally(() => {
-      setAppMode('landing');
-      resetAllState();
-      setCalEvents(null);
-      setSelectedEventId('');
+      setAppMode('landing'); resetAllState(); setCalEvents(null); setSelectedEventId('');
     });
   }
 
   // ── Prepare meeting ────────────────────────────────────────────────────
   async function prepareMeeting() {
     setLoading('Preparing your meeting brief…');
-    // FIX: Clear previous results before starting a new preparation
-    setApiError('');
-    setBrief('');
-    setLogs([]);
-    setPostResult(null);
-    setSessionId('');
-
+    setApiError(''); setBrief(''); setLogs([]); setPostResult(null); setSessionId('');
     const eventId = (meetingMode === 'calendar' && selectedEventId) ? selectedEventId : null;
     try {
       const res = await axios.post(`${API}/prepare`, { event_id: eventId, demo_mode: isDemo });
@@ -782,13 +676,13 @@ async function loadConflictsForSession() {
   async function processTranscript() {
     const t = effectiveTranscript.trim();
     if (!t) { alert('No transcript found. Use demo data or paste a transcript.'); return; }
+    await runProcess(t);
+  }
+
+  async function runProcess(t) {
     setLoading('Processing transcript through agents…');
-    // FIX: Always clear previous results before a new run to avoid stale data
-    setApiError('');
-    setPostResult(null);
-    setDebtData(null);
-    setActionItems([]);
-    setAiLoaded(false);
+    setApiError(''); setPostResult(null); setDebtData(null);
+    setActionItems([]); setAiLoaded(false);
 
     let sid = sessionId;
     if (!sid) {
@@ -800,9 +694,7 @@ async function loadConflictsForSession() {
     }
     try {
       const res = await axios.post(`${API}/process`, {
-        meeting_id: sid || undefined,
-        transcript: t,
-        demo_mode: isDemo,
+        meeting_id: sid || undefined, transcript: t, demo_mode: isDemo,
       });
       const data = res.data;
       if (data.meeting_id) setSessionId(data.meeting_id);
@@ -822,7 +714,6 @@ async function loadConflictsForSession() {
     } catch { /* non-fatal */ }
   }
 
-  // ── Recording ──────────────────────────────────────────────────────────
   async function submitRecording() {
     if (!recorder.audioBlob) return;
     setLoading('Transcribing recording…');
@@ -860,50 +751,15 @@ async function loadConflictsForSession() {
     }
   }
 
-  function loadDemo() {
-    setTranscript(DEMO_TRANSCRIPT); setTranscribed(''); setTranscriptTab('paste');
-  }
-
+  function loadDemo() { setTranscript(DEMO_TRANSCRIPT); setTranscribed(''); setTranscriptTab('paste'); }
   async function runFullDemo() {
     setTranscript(DEMO_TRANSCRIPT); setTranscribed(''); setTranscriptTab('paste');
-    setTimeout(() => { processTranscriptWithText(DEMO_TRANSCRIPT); }, 100);
+    setTimeout(() => runProcess(DEMO_TRANSCRIPT), 100);
   }
 
-  async function processTranscriptWithText(t) {
-    setLoading('Processing demo transcript through agents…');
-    // FIX: Clear previous results
-    setApiError('');
-    setPostResult(null);
-    setDebtData(null);
-    setActionItems([]);
-    setAiLoaded(false);
-
-    let sid = sessionId;
-    if (!sid) {
-      try {
-        const res = await axios.post(`${API}/prepare`, { event_id: null, demo_mode: isDemo });
-        sid = res.data.meeting_id; setSessionId(sid);
-      } catch { /* non-fatal */ }
-    }
-    try {
-      const res = await axios.post(`${API}/process`, { meeting_id: sid || undefined, transcript: t, demo_mode: isDemo });
-      const data = res.data;
-      if (data.meeting_id) setSessionId(data.meeting_id);
-      setPostResult(data);
-      await pollLogs(data.meeting_id || sid);
-    } catch (e) {
-      setApiError('Process failed: ' + (e.response?.data?.detail || e.message));
-    }
-    setLoading('');
-  }
-
-  // ── Tool panel handlers — scoped to current session ───────────────────
+  // ── Tool panel handlers ────────────────────────────────────────────────
   async function loadDebt() {
-    setDebtError('');
-    setDebtData(null);
-    // FIX: don't query Firestore at all if no session has been processed yet —
-    // a brand-new device with no session would otherwise show other users' old data
-    // (before the user_id fix was deployed) or just confusing empty/stale results.
+    setDebtError(''); setDebtData(null);
     if (!sessionId) {
       setDebtData({ open: 0, overdue: 0, overdue_items: [], open_items: [], _no_session: true });
       return;
@@ -917,17 +773,12 @@ async function loadConflictsForSession() {
   }
 
   async function loadConflicts() {
-    setConflicts([]);
-    setConflictsLoaded(false);
+    setConflicts([]); setConflictsLoaded(false);
     try {
-      // FIX: backend now scopes by user_id from cookie automatically
       const r = await axios.get(`${API}/conflicts`);
       setConflicts(Array.isArray(r.data) ? r.data : []);
       setConflictsLoaded(true);
-    } catch {
-      setConflicts([]);
-      setConflictsLoaded(true);
-    }
+    } catch { setConflicts([]); setConflictsLoaded(true); }
   }
 
   async function approveConflict(id) {
@@ -943,9 +794,7 @@ async function loadConflictsForSession() {
   async function markItemDone(id) {
     try {
       await axios.post(`${API}/action-items/${id}/done`);
-      // FIX: Refresh both debt and action items after marking done
-      loadDebt();
-      loadAllItems();
+      loadDebt(); loadAllItems();
     } catch { /* non-fatal */ }
   }
 
@@ -955,23 +804,15 @@ async function loadConflictsForSession() {
     try {
       const r = await axios.post(`${API}/agenda/finalize/${sessionId}`);
       setAgendaStatus(r.data.demo_mode
-        ? 'Demo agenda generated. (In production, replies from attendees would be used.)'
+        ? 'Demo agenda generated.'
         : `Done — ${r.data.replies_found} replies used. Calendar updated: ${r.data.calendar_patched}`);
     } catch (e) { setAgendaStatus('Error: ' + (e.response?.data?.detail || e.message)); }
   }
 
   async function loadAllItems() {
-    setAiError('');
-    setActionItems([]);
-    setAiLoaded(false);
-    // FIX: require an active session — a brand-new device with no session
-    // would otherwise hit Firestore and potentially show stale cross-user data
-    if (!sessionId) {
-      setAiLoaded(true);
-      return;
-    }
+    setAiError(''); setActionItems([]); setAiLoaded(false);
+    if (!sessionId) { setAiLoaded(true); return; }
     try {
-      // Always scope by current meeting_id + user_id from cookie (backend enforces)
       const r = await axios.get(`${API}/action-items?meeting_id=${sessionId}`);
       setActionItems(Array.isArray(r.data) ? r.data : []);
       setAiLoaded(true);
@@ -990,56 +831,38 @@ async function loadConflictsForSession() {
     return lines.join('\n');
   }
 
-  // ── Render: loading ────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────
   if (!authChecked) {
-    return (
-      <>
-        <style>{css}</style>
-        <div className="landing">
-          <div style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 13 }}>Loading…</div>
-        </div>
-      </>
-    );
+    return (<><style>{css}</style><div className="landing"><div style={{ color: 'var(--text3)', fontFamily: 'var(--mono)', fontSize: 13 }}>Loading…</div></div></>);
   }
 
   if (appMode === 'landing') {
-    return (
-      <>
-        <style>{css}</style>
-        <LandingPage onDemo={startDemo} onGoogleLogin={goToGoogleLogin} authError={authErrorMsg} />
-      </>
-    );
+    return (<><style>{css}</style><LandingPage onDemo={startDemo} onGoogleLogin={goToGoogleLogin} authError={authErrorMsg} /></>);
   }
 
-  // ── Render: main app ───────────────────────────────────────────────────
+  // Whether the tools section should be unlocked:
+  // either we have a live sessionId OR we restored one (debtData/actionItems already loaded)
+  const toolsUnlocked = !!sessionId || sessionRestored;
+
   return (
     <>
       <style>{css}</style>
       <div className="app">
-
         <DemoBanner isDemo={isDemo} onSignIn={goToGoogleLogin} />
-        {restoringSession && (
-  <div className="loading-bar" style={{ marginBottom: 16 }}>
-    <div className="spinner" /> Restoring your last session…
-  </div>
-)}
 
-{sessionRestored && !restoringSession && (
-  <div style={{
-    display: 'flex', alignItems: 'center', gap: 10,
-    padding: '10px 18px', marginBottom: 16,
-    background: 'var(--green-dim)',
-    border: '1px solid rgba(39,201,110,0.25)',
-    borderRadius: 9, fontSize: 14, color: 'var(--green)',
-  }}>
-    <Icon.CheckCircle />
-    Last session restored — your results, action items, and debt summary are loaded below.
-    <button
-      onClick={() => setSessionRestored(false)}
-      style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 18 }}
-    >×</button>
-  </div>
-)}
+        {restoringSession && (
+          <div className="loading-bar" style={{ marginBottom: 16 }}>
+            <div className="spinner" /> Restoring your last session…
+          </div>
+        )}
+        {sessionRestored && !restoringSession && (
+          <div className="restore-banner">
+            <Icon.CheckCircle />
+            Last session restored — results, action items, and debt summary are loaded below.
+            <button onClick={() => setSessionRestored(false)}>×</button>
+          </div>
+        )}
+
         <header className="header">
           <div className="header-eyebrow" style={{ justifyContent: 'space-between' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1054,9 +877,7 @@ async function loadConflictsForSession() {
           </div>
           <h1 className="header-title">Meri<span>dian</span></h1>
           <p className="header-sub">
-            {isDemo
-              ? 'Demo Mode — AI features fully live · Google integrations use demo data'
-              : 'Capture · Analyse · Act on every meeting'}
+            {isDemo ? 'Demo Mode — AI features fully live · Google integrations use demo data' : 'Capture · Analyse · Act on every meeting'}
           </p>
         </header>
 
@@ -1077,46 +898,29 @@ async function loadConflictsForSession() {
 
         {meetingMode === 'calendar' && (
           <div className="cal-select-wrap">
-            {/* FIX: Show loading spinner while fetching, not a scary error */}
             {calLoading && <div className="info-msg">Loading events…</div>}
             {!calLoading && Array.isArray(calEvents) && calEvents.length > 0 && (
               <>
                 <select className="cal-select" value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
-                  {calEvents.map(ev => (
-                    <option key={ev.id} value={ev.id}>{ev.label || `${ev.title}  ·  ${ev.start || ''}`}</option>
-                  ))}
+                  {calEvents.map(ev => (<option key={ev.id} value={ev.id}>{ev.label || `${ev.title}  ·  ${ev.start || ''}`}</option>))}
                 </select>
-                {isDemo && (
-                  <div className="demo-events-note">
-                    <Icon.Info /> Demo events — showing 5 representative meetings
-                  </div>
-                )}
+                {isDemo && <div className="demo-events-note"><Icon.Info /> Demo events — showing 5 representative meetings</div>}
               </>
             )}
-            {/* FIX: If no events loaded (empty array), show helpful guidance instead of error */}
             {!calLoading && Array.isArray(calEvents) && calEvents.length === 0 && (
-              <div className="info-msg" style={{ marginTop: 10 }}>
-                No upcoming events found. Use <strong>Quick Session</strong> above to proceed without a calendar event.
-              </div>
+              <div className="info-msg" style={{ marginTop: 10 }}>No upcoming events found. Use <strong>Quick Session</strong> above to proceed without a calendar event.</div>
             )}
           </div>
         )}
 
         {meetingMode === 'calendar' && (
-          <button
-            className="primary-btn"
-            style={{ marginTop: 18 }}
-            onClick={prepareMeeting}
-            disabled={!!loading || calLoading || (meetingMode === 'calendar' && (!Array.isArray(calEvents) || calEvents.length === 0))}
-          >
+          <button className="primary-btn" style={{ marginTop: 18 }} onClick={prepareMeeting}
+            disabled={!!loading || calLoading || (meetingMode === 'calendar' && (!Array.isArray(calEvents) || calEvents.length === 0))}>
             {loading && loading.includes('brief') ? <><div className="spinner" />{loading}</> : <><Icon.FileText /> Generate Pre-Meeting Brief</>}
           </button>
         )}
 
-        {sessionId && (
-          <div className="session-pill"><div className="session-dot" />Session active · {sessionId}</div>
-        )}
-
+        {sessionId && <div className="session-pill"><div className="session-dot" />Session active · {sessionId}</div>}
         {apiError && <div className="error-bar"><Icon.AlertTriangle /><span>{apiError}</span></div>}
         {loading && !loading.includes('brief') && !loading.includes('Transcribing') && (
           <div className="loading-bar"><div className="spinner" />{loading}</div>
@@ -1146,7 +950,6 @@ async function loadConflictsForSession() {
 
         {/* ── STEP 2 ── */}
         <div className="section-eyebrow">Step 2 — Capture meeting transcript</div>
-
         <div className="transcript-tabs">
           {[
             { id: 'record', icon: <Icon.Mic />, label: 'Record Meeting' },
@@ -1164,9 +967,7 @@ async function loadConflictsForSession() {
             <button className={`record-btn ${recorder.recording ? 'recording' : ''}`} onClick={recorder.recording ? recorder.stop : recorder.start}>
               {recorder.recording ? <Icon.MicOff /> : <Icon.Mic />}
             </button>
-            <div className="record-label">
-              {recorder.recording ? 'Recording — click to stop' : recorder.audioBlob ? 'Recording ready' : 'Click to start recording'}
-            </div>
+            <div className="record-label">{recorder.recording ? 'Recording — click to stop' : recorder.audioBlob ? 'Recording ready' : 'Click to start recording'}</div>
             <div className="record-timer">{recorder.fmt(recorder.seconds)}</div>
             <div className="record-hint">Records audio from your microphone and transcribes via Google Speech API</div>
             {recorder.audioBlob && !recorder.recording && (
@@ -1206,26 +1007,15 @@ async function loadConflictsForSession() {
 
         {transcriptTab === 'paste' && (
           <div className="paste-panel">
-            <textarea
-              className="textarea"
-              placeholder="Paste your meeting transcript here…"
-              value={transcript}
-              onChange={e => { setTranscript(e.target.value); setTranscribed(''); }}
-              rows={8}
-            />
+            <textarea className="textarea" placeholder="Paste your meeting transcript here…" value={transcript}
+              onChange={e => { setTranscript(e.target.value); setTranscribed(''); }} rows={8} />
             <span className="char-count">{transcript.length} chars</span>
           </div>
         )}
 
         <div className="demo-row">
-          {isDemo && (
-            <button className="demo-btn teal" onClick={runFullDemo}>
-              <Icon.Play /> Run full demo (auto-process)
-            </button>
-          )}
-          <button className="demo-btn" onClick={loadDemo}>
-            <Icon.Zap /> Load demo transcript
-          </button>
+          {isDemo && <button className="demo-btn teal" onClick={runFullDemo}><Icon.Play /> Run full demo (auto-process)</button>}
+          <button className="demo-btn" onClick={loadDemo}><Icon.Zap /> Load demo transcript</button>
         </div>
 
         {transcribed && (
@@ -1246,9 +1036,10 @@ async function loadConflictsForSession() {
         {postResult && (
           <>
             <div className="divider" />
-            <div className="section-eyebrow">Meeting results {postResult.demo_mode && <span style={{ color: 'var(--teal)', marginLeft: 8 }}>· Demo</span>}</div>
+            <div className="section-eyebrow">
+              Meeting results {postResult.demo_mode && <span style={{ color: 'var(--teal)', marginLeft: 8 }}>· Demo</span>}
+            </div>
 
-            {/* FIX: Stats now read directly from this specific run's postResult — no stale data */}
             <div className="stats-row">
               <div className="stat"><div className="sn">{postResult.action_items?.length ?? 0}</div><div className="sl">Action Items</div></div>
               <div className="stat"><div className="sn">{postResult.emails_sent ?? 0}</div><div className="sl">Emails Sent</div></div>
@@ -1317,34 +1108,6 @@ async function loadConflictsForSession() {
               </div>
             )}
 
-            {postResult.conflict_result?.conflicts_found > 0 && (
-              <div className="result-card amber-border">
-                <div className="rh">
-                  <div className="rh-left">
-                    <span className="rt">{postResult.conflict_result.conflicts_found} Calendar Conflict{postResult.conflict_result.conflicts_found !== 1 ? 's' : ''}</span>
-                    <span className="rtag rtag-amber">Needs Action</span>
-                  </div>
-                </div>
-                <div className="rb">
-                  {postResult.conflict_result.proposals?.map((p, i) => (
-                    <div key={i} className="conflict-item">
-                      <div className="conflict-meta">
-                        <span className="conflict-type">{p.conflict?.type}</span>
-                        <span className="conflict-title">{p.conflict?.event_title}</span>
-                      </div>
-                      {p.proposed_slot && <div className="conflict-slot">Proposed: {p.proposed_slot.substring(0, 16)}</div>}
-                      <div className="conflict-note">{p.note}</div>
-                      {p.proposed_slot && (
-                        <button className="btn btn-green btn-sm" onClick={() => approveConflict(p.id || String(i))}>
-                          <Icon.CheckCircle /> Approve Reschedule
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {postResult.debt_result && typeof postResult.debt_result.open === 'number' && (
               <div className="result-card">
                 <div className="rh">
@@ -1368,24 +1131,24 @@ async function loadConflictsForSession() {
         {/* ── TOOLS ── */}
         <div className="bottom-wrap">
           <div className="section-eyebrow">Tools & History</div>
-          {/* FIX: Only show tool buttons when a session exists.
-              A brand-new device sees a prompt to process a meeting first,
-              preventing them from accidentally querying stale cross-user data. */}
-          {!sessionId && (
+
+          {!toolsUnlocked && (
             <div className="info-msg" style={{ marginBottom: 18 }}>
               Process a meeting above to unlock Debt Summary, Action Items, and Conflict tools.
             </div>
           )}
+
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 22 }}>
-            <button className="btn" onClick={loadDebt} disabled={!sessionId}><Icon.List /> Debt Summary</button>
-            <button className="btn" onClick={loadAllItems} disabled={!sessionId}><Icon.ClipboardList /> All Action Items</button>
-            <button className="btn" onClick={loadConflicts} disabled={!sessionId}><Icon.AlertTriangle /> Conflict Proposals</button>
-            {sessionId && <button className="btn" onClick={finalizeAgenda}><Icon.RefreshCw /> Finalize Agenda</button>}
+            <button className="btn" onClick={loadDebt} disabled={!toolsUnlocked}><Icon.List /> Debt Summary</button>
+            <button className="btn" onClick={loadAllItems} disabled={!toolsUnlocked}><Icon.ClipboardList /> All Action Items</button>
+            <button className="btn" onClick={loadConflicts} disabled={!toolsUnlocked}><Icon.AlertTriangle /> Conflict Proposals</button>
+            {toolsUnlocked && <button className="btn" onClick={finalizeAgenda}><Icon.RefreshCw /> Finalize Agenda</button>}
           </div>
 
           {agendaStatus && <div className="loading-bar" style={{ marginBottom: 18 }}>{agendaStatus}</div>}
           {debtError && <div className="error-bar"><Icon.AlertTriangle /><span>{debtError}</span></div>}
 
+          {/* Debt summary — shows on restore OR after manual load */}
           {debtData && typeof debtData.open === 'number' && !debtData._no_session && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 18 }}>
@@ -1395,14 +1158,14 @@ async function loadConflictsForSession() {
               {debtData.overdue_items?.length > 0 && (
                 <>{debtData.overdue_items.map((a, i) => <ActionItemRow key={i} item={a} onDone={markItemDone} />)}</>
               )}
-              {debtData.overdue_items?.length === 0 && debtData.open === 0 && (
-                <div className="info-msg">No open action items. Great work! 🎉</div>
-              )}
+              {debtData.open === 0 && <div className="info-msg">No open action items. 🎉</div>}
             </>
           )}
 
           {aiError && <div className="error-bar"><Icon.AlertTriangle /><span>{aiError}</span></div>}
-          {aiLoaded && actionItems.length > 0 && (
+
+          {/* Action items — show automatically after restore, or after manual load */}
+          {(aiLoaded || sessionRestored) && actionItems.length > 0 && (
             <>
               <div className="slabel" style={{ marginTop: 18 }}>All Open Items ({actionItems.length})</div>
               {actionItems.map((a, i) => <ActionItemRow key={i} item={a} onDone={markItemDone} />)}

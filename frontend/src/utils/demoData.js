@@ -70,6 +70,6 @@ h1{font-size:24px;font-weight:700}h2{font-size:17px;font-weight:600;margin:22px 
 p{margin-bottom:10px}ul{padding-left:20px}li{margin-bottom:5px}</style></head><body>
 <h1>${title}</h1><p style="color:#666;font-size:13px">Exported · ${new Date().toLocaleString()}</p>
 <div>${content.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br/>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/#{1,3} (.+)/g,'<h2>$1</h2>')}</div>
-<script>window.onload=()=>window.print();<\/script></body></html>`);
+<script>window.onload=()=>window.print();</script></body></html>`);
   win.document.close();
 }

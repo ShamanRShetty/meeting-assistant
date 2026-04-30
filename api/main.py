@@ -7,6 +7,7 @@ import uvicorn, os, uuid, json
 import secrets
 import hashlib
 import base64
+import logging
 
 load_dotenv()
 
@@ -558,7 +559,7 @@ def get_latest_session(request: Request):
     except Exception as e:
         # Log it so you can actually see what's failing
         import traceback
-        print(f"[sessions/latest] ERROR for {effective_uid}: {traceback.format_exc()}")
+        logging.error(f"[sessions/latest] ERROR for {effective_uid}: {traceback.format_exc()}")
         return None
 
 # ── Action items — FIX: filter by meeting_id OR user_id to prevent cross-device leakage ──

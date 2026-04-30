@@ -68,7 +68,7 @@
   font-size: clamp(48px, 9vw, 80px);
   font-weight: 700;
   letter-spacing: -0.05em;
-  color: #fff;
+  color: var(--text-1);
   margin-bottom: var(--sp-2);
 }
 .landing-title span { color: var(--accent); }
@@ -194,7 +194,7 @@
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.04em;
-  color: #fff;
+  color: var(--text-1);
   margin-bottom: 4px;
 }
 .app-header-title span { color: var(--accent); }
@@ -450,7 +450,7 @@
   background-position: right 14px center;
 }
 .cal-select:focus { border-color: var(--accent); }
-.cal-select option { background: #111521; color: #eef2ff; }
+.cal-select option { background: var(--surface-1); color: var(--text-1); }
 
 .demo-events-hint {
   display: flex;
@@ -810,7 +810,7 @@
   font-family: var(--mono);
   font-size: 26px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-1);
   letter-spacing: -0.02em;
 }
 .stat-label {
@@ -947,7 +947,7 @@
   font-family: var(--mono);
   font-size: 18px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-1);
 }
 .roi-info {}
 .roi-recommendation { font-size: 14px; color: var(--text-2); line-height: 1.5; }
@@ -979,7 +979,7 @@
 .mini-stat-num {
   font-family: var(--mono);
   font-size: 28px;
-  color: #fff;
+  color: var(--text-1);
   letter-spacing: -0.02em;
 }
 .mini-stat-num.danger { color: var(--red); }

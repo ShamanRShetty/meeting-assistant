@@ -24,6 +24,24 @@ const API = process.env.REACT_APP_API_URL || '/api';
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function App() {
+  // ── Theme ──
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark';
+  });
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('theme-light');
+      document.body.classList.remove('theme-dark');
+    } else {
+      document.body.classList.add('theme-dark');
+      document.body.classList.remove('theme-light');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(t => (t === 'light' ? 'dark' : 'light'));
+
   // ── Auth ──
   const [appMode, setAppMode]       = useState('landing'); // 'landing' | 'demo' | 'auth'
   const [authChecked, setAuthChecked] = useState(false);
@@ -365,7 +383,7 @@ export default function App() {
         </div>
       )}
 
-      <Header isDemo={isDemo} onSignOut={signOut} onSignIn={goToGoogleLogin} />
+      <Header isDemo={isDemo} onSignOut={signOut} onSignIn={goToGoogleLogin} theme={theme} toggleTheme={toggleTheme} />
 
       {/* ── Step 1: Select meeting ── */}
       <div className="section-label">Step 1 — Select your meeting</div>

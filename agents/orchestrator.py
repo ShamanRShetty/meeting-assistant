@@ -5,7 +5,7 @@ from agents import conflict_agent, debt_agent, agenda_agent, roi_agent
 from db.firestore_client import create_session, update_session, append_log, get_session
 import os, json, uuid
 
-vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION'))
+vertexai.init(project=os.getenv('PROJECT_ID'), location=os.getenv('LOCATION', 'us-central1'))
 model = GenerativeModel('gemini-2.5-flash')
 
 

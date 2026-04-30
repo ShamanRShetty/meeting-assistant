@@ -1,7 +1,6 @@
-// components/Header.js
-import { LogOutIcon, GoogleIcon } from './Icons';
+import { LogOutIcon, GoogleIcon, SunIcon, MoonIcon } from './Icons';
 
-export default function Header({ isDemo, onSignOut, onSignIn }) {
+export default function Header({ isDemo, onSignOut, onSignIn, theme, toggleTheme }) {
   return (
     <header className="app-header">
       <div className="app-header-left">
@@ -14,15 +13,21 @@ export default function Header({ isDemo, onSignOut, onSignIn }) {
         </p>
       </div>
 
-      {!isDemo ? (
-        <button className="btn" onClick={onSignOut} style={{ alignSelf: 'flex-start' }}>
-          <LogOutIcon /> Sign out
+      <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'flex-start' }}>
+        <button className="btn" onClick={toggleTheme} title="Toggle Theme" style={{ padding: '8px' }}>
+          {theme === 'light' ? <MoonIcon /> : <SunIcon />}
         </button>
-      ) : (
-        <button className="btn" onClick={onSignIn} style={{ alignSelf: 'flex-start' }}>
-          <GoogleIcon /> Sign in
-        </button>
-      )}
+
+        {!isDemo ? (
+          <button className="btn" onClick={onSignOut}>
+            <LogOutIcon /> Sign out
+          </button>
+        ) : (
+          <button className="btn" onClick={onSignIn}>
+            <GoogleIcon /> Sign in
+          </button>
+        )}
+      </div>
     </header>
   );
 }

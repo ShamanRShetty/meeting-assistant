@@ -46,7 +46,7 @@ export default function ResultsPanel({ result, onMarkDone }) {
       {/* Summary */}
       {result.summary && (
         <div style={{ marginBottom: 'var(--sp-3)' }}>
-          <div className="summary-block">{result.summary}</div>
+          <div className="summary-block md"><ReactMarkdown>{result.summary}</ReactMarkdown></div>
           <div style={{ display: 'flex', gap: 'var(--sp-2)', justifyContent: 'flex-end' }}>
             <CopyButton text={result.summary} label="Copy Summary" />
             <button className="btn-copy" onClick={() => exportPDF(exportText, 'Meeting Summary')}>

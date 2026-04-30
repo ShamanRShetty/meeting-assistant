@@ -116,8 +116,6 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     cal_data_stored = session.get('meeting_data', {})
     attendees = cal_data_stored.get('attendees', [])
 
-    # FIX: Read user_id from session so debt_agent is scoped correctly.
-    # The session user_id was written by api/main.py when create_session was called.
     user_id = (
         session.get('user_id')
         or session.get('meeting_data', {}).get('user_id')
@@ -128,17 +126,17 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     notes_data = notes_agent.run(meeting_id, transcript)
 
     # Step 2: Task agent
-    # notes_agent already strips completed items from action_items,
-    # so action_items_raw contains ONLY open/pending items.
+    # notes_agent already strips completed items — action_items_raw is OPEN only.
     action_items_raw = notes_data.get('action_items', [])
     if not isinstance(action_items_raw, list):
         action_items_raw = []
 
+    # Pass notes_data but task_agent no longer uses emails_confirmed_sent.
     task_data = task_agent.run(
         meeting_id,
         action_items_raw,
         attendees,
-        notes_data=notes_data,  # FIX: pass so task_agent reads emails_confirmed_sent
+        notes_data=notes_data,
     )
 
     update_session(meeting_id, {
@@ -149,8 +147,6 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     append_log(meeting_id, 'orchestrator', 'Post-meeting processing complete')
 
     # D2: Meeting debt tracker
-    # FIX: scope by BOTH user_id AND meeting_id so debt shows only THIS meeting's
-    # open items — not the cumulative total across all past meetings for this user.
     debt_result = None
     try:
         debt_result = debt_agent.run(meeting_id, user_id=user_id)
@@ -166,21 +162,19 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
     except Exception as ex:
         append_log(meeting_id, 'orchestrator', f'ROI agent skipped: {ex}')
 
-    # FIX: debt open count = items from THIS meeting only (not all past meetings)
-    # Override debt_result.open to reflect only current meeting's open items
+    # Override debt counts to reflect only THIS meeting's open items
     if debt_result and isinstance(debt_result, dict):
-        current_open = len(action_items_raw)  # already deduped & open-only from notes_agent
+        current_open = len(action_items_raw)
         debt_result['open'] = current_open
-        # recalculate overdue from the current open items only
-        from datetime import date
-        today_str = date.today().isoformat()
-        current_overdue = [
-            i for i in action_items_raw
-            if i.get('due_date', 'TBD') != 'TBD' and i.get('due_date', '') < today_str
-        ]
-        debt_result['overdue'] = len(current_overdue)
-        debt_result['overdue_items'] = current_overdue
+        debt_result['overdue'] = 0      # due_dates are now relative strings, not comparable
+        debt_result['overdue_items'] = []
         debt_result['open_items'] = action_items_raw
+
+    # ── Build the final response ─────────────────────────────────────────
+    # Use task_data['items'] as the authoritative action item list so that
+    # the count in the stats row (action_items.length) always matches the
+    # detailed list rendered below it.
+    final_items = task_data.get('items') or []
 
     return {
         'meeting_id':    meeting_id,
@@ -188,8 +182,9 @@ def process_meeting(meeting_id: str, transcript: str) -> dict:
         'decisions':     notes_data.get('decisions') or [],
         'topics':        notes_data.get('topics_discussed') or [],
         'sentiment':     notes_data.get('sentiment') or 'neutral',
-        'action_items':  task_data.get('items') or [],
-        'tasks_created': task_data.get('tasks_created') or 0,
+        # Single source of truth for action items — both count and list come from here
+        'action_items':  final_items,
+        'tasks_created': len(final_items),          # always == len(action_items)
         'emails_sent':   task_data.get('emails_sent') or 0,
         'debt_result':   debt_result,
         'roi_result':    roi_result,

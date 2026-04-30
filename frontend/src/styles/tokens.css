@@ -1,0 +1,56 @@
+/* ─────────────────────────────────────────────────────
+   MERIDIAN — Design Tokens
+   ───────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ── Palette ── */
+  --bg:        #07090f;
+  --surface-1: #0d1018;
+  --surface-2: #111521;
+  --surface-3: #171d2e;
+  --surface-4: #1e2538;
+
+  --border:    rgba(255,255,255,0.06);
+  --border-md: rgba(255,255,255,0.10);
+
+  --text-1: #eef2ff;
+  --text-2: #8896b8;
+  --text-3: #3d4e72;
+
+  --accent:     #4f7cff;
+  --accent-dim: rgba(79,124,255,0.10);
+  --accent-mid: rgba(79,124,255,0.20);
+
+  --green:      #22c55e;
+  --green-dim:  rgba(34,197,94,0.10);
+  --amber:      #f59e0b;
+  --amber-dim:  rgba(245,158,11,0.10);
+  --red:        #ef4444;
+  --red-dim:    rgba(239,68,68,0.10);
+  --teal:       #2dd4bf;
+  --teal-dim:   rgba(45,212,191,0.10);
+
+  /* ── Spacing ── */
+  --sp-1: 6px;
+  --sp-2: 10px;
+  --sp-3: 16px;
+  --sp-4: 24px;
+  --sp-5: 32px;
+  --sp-6: 48px;
+
+  /* ── Radius ── */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  /* ── Typography ── */
+  --font:  'DM Sans', system-ui, sans-serif;
+  --mono:  'DM Mono', ui-monospace, monospace;
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}

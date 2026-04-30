@@ -1,0 +1,65 @@
+/* ─────────────────────────────────────────────────────
+   BASE — Reset, body, typography
+   ───────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* ── Focus ── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* ── Typography scale ── */
+h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; }
+h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+h3 { font-size: 15px; font-weight: 600; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* ── Selection ── */
+::selection { background: var(--accent-mid); color: var(--text-1); }
+
+/* ── Markdown ── */
+.md h1, .md h2, .md h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-1);
+  margin: var(--sp-3) 0 var(--sp-1);
+}
+.md p { font-size: 14px; color: var(--text-2); margin-bottom: var(--sp-2); line-height: 1.65; }
+.md ul, .md ol { padding-left: var(--sp-4); margin-bottom: var(--sp-2); }
+.md li { font-size: 14px; color: var(--text-2); margin-bottom: 4px; }
+.md strong { color: var(--text-1); font-weight: 600; }
+.md code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface-3);
+  padding: 1px 5px;
+  border-radius: var(--r-sm);
+  color: var(--accent);
+}
+.md a { color: var(--accent); text-decoration: none; }
+.md a:hover { text-decoration: underline; }

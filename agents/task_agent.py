@@ -4,12 +4,12 @@ from db.firestore_client import save_action_items, append_log
 def run(meeting_id: str, action_items: list[dict], attendees: list[str],
         notes_data: dict = None) -> dict:
     """
-    FIX: action_items here are already filtered to OPEN items only by notes_agent.
-    Completed items were stripped before this call.
+    action_items are already filtered to OPEN items only by notes_agent.
 
-    emails_sent now = Gmail notifications sent by this agent
-                    + emails confirmed already sent within the meeting transcript
-                    (detected by notes_agent as emails_confirmed_sent).
+    emails_sent = only the Gmail notification emails this agent sends out.
+    We deliberately do NOT add notes_data.emails_confirmed_sent here —
+    those are calendar invites / in-meeting sends that are not emails from
+    this agent and should not be counted in the notification total.
     """
     append_log(meeting_id, 'task_agent',
                f'Processing {len(action_items)} open action items...')
@@ -71,21 +71,11 @@ def run(meeting_id: str, action_items: list[dict], attendees: list[str],
         append_log(meeting_id, 'task_agent',
                    f'Could not email: {", ".join(skipped_emails)} — no matching attendee emails')
 
-    # FIX: total emails_sent = Gmail notifications we sent
-    #                        + sends that were confirmed IN the transcript by notes_agent
-    in_transcript_sends = 0
-    if notes_data and isinstance(notes_data, dict):
-        in_transcript_sends = int(notes_data.get('emails_confirmed_sent') or 0)
-
-    total_emails = notification_emails_sent + in_transcript_sends
-
     append_log(meeting_id, 'task_agent',
-               f'Saved {len(saved)} tasks. '
-               f'Sent {notification_emails_sent} notification emails + '
-               f'{in_transcript_sends} confirmed in transcript = {total_emails} total.')
+               f'Saved {len(saved)} tasks. Sent {notification_emails_sent} notification emails.')
 
     return {
         'tasks_created': len(saved),
-        'emails_sent': total_emails,
+        'emails_sent': notification_emails_sent,
         'items': saved,
     }

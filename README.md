@@ -4,6 +4,10 @@ Meridian Meeting Assistant is an AI-powered smart application that integrates wi
 
 It leverages advanced Google Cloud services, including Vertex AI and Speech-to-Text, to help professionals save time and stay organized.
 
+## The Problem It Solves
+
+Modern professionals spend an enormous amount of time in meetings, leading to context switching, forgotten action items, and double-booked schedules. Meridian Meeting Assistant solves this by acting as an AI Chief of Staff. It automatically prepares you for meetings, distills transcripts into clear action items, keeps track of outstanding "debt" (unresolved tasks), and handles the busywork of identifying and resolving calendar conflicts. 
+
 ## Features
 
 - **Calendar Integration**: Connects seamlessly with Google Calendar using OAuth to view upcoming events and securely manage schedules.
@@ -27,8 +31,14 @@ It leverages advanced Google Cloud services, including Vertex AI and Speech-to-T
 - Node.js & npm
 - A Google Cloud Project with the required APIs enabled (Calendar API, Speech-to-Text, Vertex AI, Firestore).
 
+### Clone the Repository
+```bash
+git clone https://github.com/yourusername/meeting-assistant.git
+cd meeting-assistant
+```
+
 ### Backend Setup
-1. Navigate to the root directory.
+1. Ensure you are in the root directory (`meeting-assistant`).
 2. Create and activate a Python virtual environment:
    ```bash
    python -m venv venv
